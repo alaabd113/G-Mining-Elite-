@@ -10,113 +10,126 @@
     <script src="https://fastly.jsdelivr.net/npm/vant@4/lib/vant.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --gold: #FFD700; --dark-bg: #0a0a0a; --glass: rgba(255, 255, 255, 0.05); }
-        body { background: var(--dark-bg); color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 120px; overflow-x: hidden; }
-        .glass-card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin: 15px; }
-        .gold-text { background: linear-gradient(45deg, #FFD700, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        :root { --gold: #FFD700; --dark-bg: #0b0b0b; --card: rgba(255, 255, 255, 0.05); }
+        body { background: var(--dark-bg); color: #fff; font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 100px; overflow-x: hidden; }
+        .glass-card { background: var(--card); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; margin: 15px; }
+        .gold-gradient { background: linear-gradient(45deg, #FFD700, #FDB931, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
         
-        /* شريط الإعلانات العلوي */
-        .notice-bar { background: rgba(255, 215, 0, 0.1) !important; color: var(--gold) !important; font-size: 12px !important; height: 35px !important; }
+        /* شريط الإعلانات للسحوبات */
+        .withdraw-notice { background: rgba(255, 215, 0, 0.1) !important; color: var(--gold) !important; font-size: 11px !important; border-bottom: 1px solid rgba(255,215,0,0.1); }
 
-        /* كروت VIP */
-        .vip-card { background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,0,0,0.8) 100%); border: 1px solid rgba(255,215,0,0.2); border-radius: 24px; padding: 20px; margin-bottom: 20px; }
-        .price-tag { font-size: 24px; font-weight: bold; color: var(--gold); }
+        /* أزرار الإيداع العصرية */
+        .deposit-option { border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
+        .deposit-option.active { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+        .crypto-logo { width: 30px; height: 30px; border-radius: 50%; }
+
+        /* كروت VIP المتطورة */
+        .vip-card { background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,0,0,0.8) 100%); border: 1px solid rgba(255,215,0,0.2); border-radius: 25px; padding: 20px; margin-bottom: 20px; position: relative; }
+        .vip-price { font-size: 30px; font-weight: bold; color: var(--gold); }
+        .vip-benefit { font-size: 12px; color: #ccc; display: flex; align-items: center; gap: 5px; margin-top: 5px; }
 
         /* شريط التنقل السفلي */
-        .floating-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(20,20,20,0.95); border-radius: 20px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid #333; z-index: 1000; }
-        .nav-item { color: #666; font-size: 11px; text-align: center; }
-        .nav-item.active { color: var(--gold); }
-
-        /* تخصيص النوافذ المنبثقة (لا صيني بعد اليوم) */
-        .van-dialog { border-radius: 24px !important; background: #fff !important; color: #333 !important; }
-        .van-button--default { color: #666 !important; }
-        .van-button--primary { color: var(--gold) !important; font-weight: bold !important; }
+        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 15, 15, 0.95); border-radius: 22px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid #333; z-index: 1000; }
+        .nav-btn { color: #666; text-align: center; font-size: 11px; }
+        .nav-btn.active { color: var(--gold); }
+        
+        /* إزالة الصينية وتصحيح الحوارات */
+        .van-dialog { border-radius: 24px !important; background: #1a1a1a !important; color: #fff !important; }
+        .van-dialog__header { color: var(--gold) !important; }
+        .van-button--default { background: #2a2a2a !important; color: #fff !important; border: none !important; }
+        .van-button--primary { background: var(--gold) !important; color: #000 !important; font-weight: bold !important; border: none !important; }
     </style>
 </head>
 <body>
 <div id="app" v-cloak>
-    <van-notice-bar class="notice-bar" left-icon="volume-o" :text="withdrawalNotice" scrollable />
+    <van-notice-bar class="withdraw-notice" left-icon="volume-o" :text="liveNotice" scrollable />
 
     <div v-if="activeTab === 'home'">
         <div class="glass-card" style="text-align: center;">
-            <p style="color: #888; margin:0;">الرصيد المتاح للسحب</p>
-            <h1 class="gold-text" style="font-size: 40px; margin: 10px 0;">${{ (user?.balance || 0).toFixed(4) }}</h1>
+            <p style="color: #888; margin:0; font-size: 12px;">الرصيد القابل للسحب</p>
+            <h1 class="gold-gradient" style="font-size: 42px; margin: 5px 0;">${{ (user?.balance || 0).toFixed(4) }}</h1>
             <div style="font-size: 12px; opacity: 0.8;">
-                <span class="gold-text">مستوى العضوية: VIP {{ user?.vip || 0 }}</span> | السرعة: {{ speedMultiplier }}x
+                <span>VIP {{ user?.vip || 0 }}</span> | سرعة التعدين: {{ speedMultiplier }}x
             </div>
         </div>
 
-        <div style="text-align: center; margin: 30px 0;">
-            <div style="width: 160px; height: 160px; border-radius: 50%; border: 4px solid var(--gold); margin: 0 auto; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255,215,0,0.2), transparent); cursor: pointer;" @click="mine">
-                <i class="fa-solid fa-microchip" style="font-size: 70px; color: var(--gold);"></i>
+        <div style="text-align: center; margin: 25px 0;">
+            <div style="width: 170px; height: 170px; border-radius: 50%; border: 4px solid var(--gold); margin: 0 auto; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(253,185,49,0.15) 0%, transparent 70%); cursor: pointer; transition: 0.2s;" @click="mine">
+                <i class="fa-solid fa-microchip" style="font-size: 75px; color: var(--gold); filter: drop-shadow(0 0 10px var(--gold));"></i>
             </div>
-            <p style="margin-top: 15px; font-size: 13px; color: #aaa;">انقر هنا لتوليد الذهب الرقمي</p>
+            <p style="margin-top: 15px; font-size: 13px; color: #666;">انقر لتوليد الأرباح السحابية</p>
         </div>
 
         <div style="display: flex; gap: 12px; padding: 0 15px;">
-            <van-button block round plain color="#FFD700" @click="showWithdraw=true">سحب الأرباح</van-button>
-            <van-button block round color="linear-gradient(to right, #FFD700, #B8860B)" @click="showDeposit=true">
-                <span style="color:#000; font-weight:bold">شحن الرصيد</span>
+            <van-button block round plain color="#FFD700" @click="showWithdraw=true">سحب</van-button>
+            <van-button block round color="linear-gradient(45deg, #FFD700, #B8860B)" @click="showDeposit=true">
+                <span style="color:#000; font-weight:bold">إيداع</span>
             </van-button>
         </div>
     </div>
 
     <div v-if="activeTab === 'plans'" style="padding: 15px;">
-        <h2 class="gold-text" style="text-align: center; margin-bottom: 20px;">نظام ترقية الأرباح 👑</h2>
+        <h2 class="gold-gradient" style="text-align: center;">خطط الاستثمار الملكية 👑</h2>
         
         <div class="vip-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b>عضوية VIP 1</b>
-                <div class="price-tag">$1.00</div>
+                <b>باقة VIP 1</b>
+                <div class="vip-price">$1</div>
             </div>
-            <p style="font-size: 12px; color: #ccc; margin: 10px 0;">الربح اليومي: <b>$0.15</b> | تفتح ميزة السحب فوراً.</p>
-            <van-button block size="small" round color="#FFD700" @click="openDepositPlan('1')">
+            <div class="vip-benefit"><i class="fa-solid fa-check-circle"></i> ربح يومي: <b>$0.15</b></div>
+            <div class="vip-benefit"><i class="fa-solid fa-lock-open"></i> تفتح ميزة السحب فوراً</div>
+            <van-button block round color="#FFD700" size="small" style="margin-top: 15px;" @click="openPlan('1')">
                 <span style="color:#000; font-weight:bold">تفعيل العضوية</span>
             </van-button>
         </div>
 
         <div class="vip-card" style="border-color: #00ff00;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b>عضوية VIP 2</b>
-                <div class="price-tag" style="color:#00ff00;">$5.00</div>
+                <b>باقة VIP 2</b>
+                <div class="vip-price" style="color: #00ff00;">$5</div>
             </div>
-            <p style="font-size: 12px; color: #ccc; margin: 10px 0;">الربح اليومي: <b>$1.00</b> | سرعة تعدين فائقة وسقف سحب مرتفع.</p>
-            <van-button block size="small" round color="#00ff00" @click="openDepositPlan('5')">
+            <div class="vip-benefit"><i class="fa-solid fa-check-circle"></i> ربح يومي: <b>$1.00</b></div>
+            <div class="vip-benefit"><i class="fa-solid fa-rocket"></i> زيادة سرعة التعدين +30%</div>
+            <van-button block round color="#00ff00" size="small" style="margin-top: 15px;" @click="openPlan('5')">
                 <span style="color:#000; font-weight:bold">تفعيل العضوية</span>
             </van-button>
         </div>
     </div>
 
-    <van-notice-bar v-if="activeTab === 'home'" style="position:fixed; bottom:85px; width:100%; height:30px; background:rgba(0,0,0,0.8); font-size:10px;" color="#FFD700" text="ترقية حسابك لـ VIP تضمن لك أرباحاً يومية مستقرة وسحوبات فورية بدون قيود!" />
+    <van-notice-bar v-if="activeTab === 'home'" style="position:fixed; bottom:85px; width:100%; height:30px; background:rgba(0,0,0,0.8); font-size:10px;" color="#FFD700" text="انضم إلى VIP لتسريع تعدينك وفتح سحب الأرباح فوراً! استثمر في الذهب الرقمي الآن." />
 
-    <div class="floating-nav">
-        <div class="nav-item" :class="{active: activeTab==='home'}" @click="activeTab='home'"><i class="fa-solid fa-house"></i><div>الرئيسية</div></div>
-        <div class="nav-item" :class="{active: activeTab==='plans'}" @click="activeTab='plans'"><i class="fa-solid fa-gem"></i><div>عضويات VIP</div></div>
-        <div class="nav-item" @click="activeTab='about'"><i class="fa-solid fa-shield-halved"></i><div>الأمان</div></div>
+    <div class="nav-bar">
+        <div class="nav-btn" :class="{active: activeTab==='home'}" @click="activeTab='home'"><i class="fa-solid fa-house" style="font-size:20px;"></i><div>الرئيسية</div></div>
+        <div class="nav-btn" :class="{active: activeTab==='plans'}" @click="activeTab='plans'"><i class="fa-solid fa-gem" style="font-size:20px;"></i><div>VIP</div></div>
+        <div class="nav-btn" @click="activeTab='about'"><i class="fa-solid fa-shield-halved" style="font-size:20px;"></i><div>الأمان</div></div>
     </div>
 
     <van-dialog v-model:show="showDeposit" title="إيداع آمن" show-cancel-button confirm-button-text="تأكيد" cancel-button-text="إلغاء" @confirm="confirmDeposit">
-        <div style="padding: 20px; color: #333;">
-            <p style="font-size:12px; margin-bottom:10px;">اختر الشبكة لإظهار عنوان الإيداع:</p>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <van-button size="small" block :plain="net!=='TRC20'" color="#26a17b" @click="net='TRC20'">
-                    <i class="fa-solid fa-t"></i> USDT (TRC20)
-                </van-button>
-                <van-button size="small" block :plain="net!=='BEP20'" color="#f3ba2f" @click="net='BEP20'">
-                    <i class="fa-solid fa-b"></i> USDT (BEP20)
-                </van-button>
+        <div style="padding: 20px; color: #fff;">
+            <p style="font-size:11px; color:#888; margin-bottom:15px;">اختر الشبكة لإظهار عنوان المحفظة الخاص بنا:</p>
+            
+            <div class="deposit-option" :class="{active: net==='TRC20'}" @click="net='TRC20'">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="crypto-logo">
+                <div><b>USDT (TRC20)</b><div style="font-size:10px; color:#666;">شبكة ترون</div></div>
             </div>
-            <div style="background:#f9f9f9; padding:12px; border-radius:10px; font-size:10px; word-break:break-all; border:1px dashed #FFD700; text-align:center;">
+
+            <div class="deposit-option" :class="{active: net==='BEP20'}" @click="net='BEP20'">
+                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" class="crypto-logo">
+                <div><b>USDT (BEP20)</b><div style="font-size:10px; color:#666;">شبكة بينانس</div></div>
+            </div>
+
+            <div style="background: rgba(255,215,0,0.05); padding: 12px; border-radius: 12px; border: 1px dashed var(--gold); margin: 15px 0; font-size: 11px; word-break: break-all; text-align: center; color: var(--gold);">
                 {{ net==='TRC20' ? 'TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto' : '0x88bea8db94f9428f282b2cc375ec68ac67fd9200' }}
             </div>
-            <van-field v-model="tx" label="TXID" placeholder="أدخل رقم العملية (Hash) هنا" style="margin-top:10px; border:1px solid #eee; border-radius:8px;"></van-field>
+            
+            <van-field v-model="tx" label="TXID" placeholder="أدخل رقم العملية هنا" style="background:#222; border-radius:10px; margin-top:10px;"></van-field>
         </div>
     </van-dialog>
 
     <van-dialog v-model:show="showWithdraw" title="سحب الأرباح" show-cancel-button confirm-button-text="سحب" cancel-button-text="إلغاء" @confirm="requestWithdraw">
         <div style="padding: 20px;">
-            <van-field v-model="wAmt" label="المبلغ" type="number" placeholder="أقل مبلغ 2$"></van-field>
-            <van-field v-model="wAddr" label="المحفظة" placeholder="عنوان USDT الخاص بك"></van-field>
+            <van-field v-model="wAmt" type="number" label="المبلغ" placeholder="أقل مبلغ للسحب 2$"></van-field>
+            <van-field v-model="wAddr" label="المحفظة" placeholder="عنوان محفظتك USDT"></van-field>
         </div>
     </van-dialog>
 </div>
@@ -125,10 +138,10 @@
     const { createApp, ref, onMounted, computed } = Vue;
     const { showToast, showDialog } = vant;
     const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
-    const ADMIN_ID = "921301895";
 
     createApp({
         setup() {
+            // حل مشكلة Undefined: تهيئة الكائن بقيم افتراضية
             const user = ref({ balance: 0, referralCount: 0, vip: 0 });
             const activeTab = ref('home');
             const userId = ref("");
@@ -138,7 +151,7 @@
             const tx = ref("");
             const wAmt = ref("");
             const wAddr = ref("");
-            const withdrawalNotice = ref("تهنئة! العضو User***57 سحب 4$ بنجاح. | العضو User***12 سحب 10$ بنجاح.");
+            const liveNotice = ref("جاري تحميل بيانات السحوبات...");
 
             const speedMultiplier = computed(() => (1 + (user.value?.referralCount || 0) * 0.1).toFixed(1));
 
@@ -151,12 +164,12 @@
                         await apiRequest('login');
                     }
                 }
-                // تحديث إشعارات السحب الوهمية لزيادة الحماس
+                // إشعارات وهمية لزيادة التفاعل
                 setInterval(() => {
-                    const users = ["21", "88", "43", "09", "76"];
-                    const amounts = ["2", "5", "12", "7", "20"];
-                    withdrawalNotice.value = `تهنئة! العضو User***${users[Math.floor(Math.random()*5)]} سحب ${amounts[Math.floor(Math.random()*5)]}$ بنجاح عبر ${net.value}.`;
-                }, 10000);
+                    const amounts = ["2.5", "5.0", "1.2", "10.0", "4.4"];
+                    const id = Math.floor(Math.random() * 99);
+                    liveNotice.value = `تهنئة! العضو User***${id} سحب ${amounts[Math.floor(Math.random()*5)]}$ بنجاح.`;
+                }, 7000);
             });
 
             const apiRequest = async (action, data = {}) => {
@@ -171,35 +184,33 @@
                         user.value = result.balance !== undefined ? result : result.user;
                         return result;
                     } else if (result?.error) showToast(result.error);
-                } catch (e) { 
-                    console.log("Error details:", e);
-                }
+                } catch (e) { console.error("API Error"); }
             };
 
             const mine = () => {
-                // حل مشكلة الخطأ: التأكد من وجود userId قبل الطلب
-                if (!userId.value) return showToast("يرجى الانتظار حتى تحميل البيانات...");
+                // حل الخطأ: التأكد من وجود البيانات قبل تنفيذ الطلب
+                if (!userId.value) return showToast("انتظر تحميل البيانات...");
                 if (window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                 apiRequest('mine', { amount: 0.01 });
             };
 
-            const openDepositPlan = (price) => {
-                showToast(`يرجى إيداع ${price}$ لتفعيل الخطة`);
+            const openPlan = (price) => {
+                showToast(`يرجى إرسال ${price}$ لتفعيل الخطة`);
                 showDeposit.value = true;
             };
 
             const confirmDeposit = async () => {
-                if(!tx.value) return showToast('يرجى إدخال رقم العملية أولاً');
+                if(!tx.value) return showToast('أدخل رقم العملية أولاً');
                 await apiRequest('request_deposit', { txId: tx.value, network: net.value });
-                showDialog({ message: 'تم استلام طلبك! سيتم مراجعة الـ TXID وتفعيل حسابك خلال دقائق ✅' });
+                showDialog({ message: 'تم إرسال الطلب! سيتم مراجعة العملية وتفعيل حسابك يدوياً ✅' });
             };
 
             const requestWithdraw = async () => {
-                if (user.value.vip < 1) return showDialog({ message: 'عذراً! السحب متاح فقط لمشتركي VIP 1 أو أعلى.' });
+                if (user.value.vip < 1) return showDialog({ message: 'السحب متاح فقط لمشتركي VIP 1 أو أعلى' });
                 await apiRequest('request_withdraw', { amount: wAmt.value, wallet: wAddr.value });
             };
 
-            return { user, activeTab, speedMultiplier, showDeposit, showWithdraw, net, tx, wAmt, wAddr, withdrawalNotice, mine, openDepositPlan, confirmDeposit, requestWithdraw };
+            return { user, activeTab, speedMultiplier, showDeposit, showWithdraw, net, tx, wAmt, wAddr, liveNotice, mine, openPlan, confirmDeposit, requestWithdraw };
         }
     }).use(vant).mount('#app');
 </script>
