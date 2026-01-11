@@ -3,57 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel</title>
+<title>TokenDrip</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 :root {
-  --bg:#1e1e1e;
-  --card:rgba(255,255,255,.05);
-  --text:#fff;
-  --primary:#2196f3;
-  --success:#4caf50;
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#ffffff;
+  --primary:#00bcd4;
 }
-
-* { box-sizing:border-box; font-family:system-ui }
-
-html,body { height:100%; margin:0 }
-
-body {
+*{box-sizing:border-box;font-family:system-ui}
+body{
+  margin:0;
   background:var(--bg);
   color:var(--text);
   padding-bottom:env(safe-area-inset-bottom);
 }
-
-.container { max-width:600px; margin:auto; padding:16px }
-.card {
+.container{max-width:600px;margin:auto;padding:16px}
+.card{
   background:var(--card);
   border-radius:16px;
   padding:16px;
   margin-bottom:16px;
 }
-
-input,select,button {
+button{
   width:100%;
-  padding:12px;
-  margin-top:8px;
-  border-radius:8px;
+  padding:14px;
+  border-radius:12px;
   border:none;
+  background:var(--primary);
+  color:#000;
+  font-size:1rem;
 }
-
-button { cursor:pointer }
-.primary { background:var(--primary); color:#fff }
-.success { background:var(--success); color:#fff }
-
-.toast {
-  position:fixed;
-  bottom:20px;
-  right:20px;
-  background:#000;
-  color:#fff;
-  padding:10px 16px;
-  border-radius:8px;
+.small{font-size:.9rem;word-break:break-all}
+.stat{margin-top:6px;font-size:1.05rem}
+.progress{
+  height:10px;
+  background:#333;
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:8px;
+}
+.bar{
+  height:100%;
+  background:var(--primary);
 }
 </style>
 </head>
@@ -61,78 +56,98 @@ button { cursor:pointer }
 <body>
 <div class="container">
 
-<h2>⚙️ لوحة تحكم الأدمن</h2>
+  <div class="card">
+    <h3>💰 رصيدك</h3>
+    <div id="balance">0.0000 $</div>
+  </div>
 
-<div class="card">
-  <input id="userId" placeholder="User ID">
-  <input id="balance" type="number" step="0.01" placeholder="Add Balance">
-  <select id="vip">
-    <option value="0">FREE</option>
-    <option value="1">BASIC</option>
-    <option value="2">PRO</option>
-    <option value="3">ELITE</option>
-  </select>
-  <button class="primary" onclick="updateUser()">تحديث المستخدم</button>
-</div>
+  <div class="card">
+    <h3>⭐ مستواك</h3>
+    <div class="stat">Level: <b id="level">1</b></div>
+    <div class="stat">XP: <b id="xp">0</b></div>
+    <div class="progress">
+      <div id="xpBar" class="bar"></div>
+    </div>
+  </div>
 
-<div class="card">
-  <input id="wkey" placeholder="Withdraw Key">
-  <button class="success" onclick="approve()">اعتماد السحب</button>
-</div>
+  <div class="card">
+    <h3>🤝 الإحالات</h3>
+    <div class="stat">عدد الإحالات: <b id="refCount">0</b></div>
+    <div class="stat">تمت دعوتك بواسطة: <b id="invitedBy">—</b></div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 رابط الإحالة</h3>
+    <div id="refLink" class="small"></div>
+    <button onclick="copyRef()">نسخ الرابط</button>
+  </div>
 
 </div>
 
 <script>
-const tg = window.Telegram.WebApp;
+const tg = Telegram.WebApp;
+tg.ready(); tg.expand();
+
 const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+const BOT_USERNAME = "TokenDrip_bot";
 
-if (!tg?.initDataUnsafe?.user) {
-  document.body.innerHTML = "❌ ACCESS DENIED";
-  throw new Error("Not Telegram");
-}
+let USER = null;
 
-tg.ready();
-tg.expand();
-
-document.documentElement.style.setProperty(
-  "--bg",
-  tg.themeParams.bg_color || "#1e1e1e"
-);
-
-function toast(msg) {
-  const t=document.createElement("div");
-  t.className="toast";
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
-}
-
-async function api(payload) {
-  const r = await fetch(SERVER,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      initData:tg.initData,
-      action:"admin_action",
+async function api(action, payload = {}) {
+  const r = await fetch(SERVER, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      initData: tg.initData,
+      action,
       payload
     })
   });
   return r.json();
 }
 
-async function updateUser() {
-  const d = await api({
-    targetId:+userId.value,
-    addBal:+balance.value,
-    setVip:+vip.value
-  });
-  toast(d.ok?"تم":"خطأ");
+async function load() {
+  const ref = tg.initDataUnsafe?.start_param || null;
+  const d = await api("login", { ref });
+  USER = d.user;
+  render();
 }
 
-async function approve() {
-  const d = await api({ approveKey:wkey.value });
-  toast(d.ok?"تم":"خطأ");
+function render() {
+  document.getElementById("balance").innerText =
+    USER.balance.toFixed(4) + " $";
+
+  document.getElementById("refCount").innerText =
+    USER.refCount || 0;
+
+  document.getElementById("invitedBy").innerText =
+    USER.invitedBy ? USER.invitedBy : "—";
+
+  document.getElementById("level").innerText = USER.level;
+  document.getElementById("xp").innerText = USER.xp || 0;
+
+  const nextXp = USER.level < 10
+    ? [0,10,25,45,70,100,140,190,250,320][USER.level] 
+    : USER.xp;
+
+  const percent = nextXp
+    ? Math.min((USER.xp / nextXp) * 100, 100)
+    : 100;
+
+  document.getElementById("xpBar").style.width = percent + "%";
+
+  const link = `https://t.me/${BOT_USERNAME}?start=${USER.id}`;
+  document.getElementById("refLink").innerText = link;
 }
+
+function copyRef() {
+  navigator.clipboard.writeText(
+    document.getElementById("refLink").innerText
+  );
+  alert("تم نسخ رابط الإحالة");
+}
+
+load();
 </script>
 </body>
 </html>
