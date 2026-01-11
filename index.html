@@ -1,204 +1,119 @@
-<script>
-const { createApp, ref, onMounted, onUnmounted } = Vue;
-const { showToast, showDialog, showLoadingToast, closeToast } = vant;
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TokenDrip Mining</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
+  <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
+  <style>
+    [v-cloak] { display: none; }
+    body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
+    .app-container { padding: 20px; text-align: center; }
+    .balance-card { background: linear-gradient(135deg, #1a1a1a, #222); padding: 30px; border-radius: 20px; border: 1px solid #ffd70033; margin-top: 20px; }
+    .mine-btn { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(#ffd700, #b8860b); border: 8px solid #333; color: #000; font-weight: bold; font-size: 20px; margin: 30px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px #ffd70055; cursor: pointer; }
+    .mine-btn:active { transform: scale(0.95); }
+    .withdraw-ticker { position: fixed; bottom: 0; width: 100%; background: #000; height: 40px; overflow: hidden; display: flex; align-items: center; border-top: 1px solid #333; }
+    .track { display: flex; gap: 50px; animation: scroll 20s linear infinite; white-space: nowrap; }
+    @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+  </style>
+</head>
+<body>
+  <div id="app" v-cloak>
+    <div class="app-container">
+      <h3>مرحباً، {{ user.id }}</h3>
+      <div class="balance-card">
+        <div style="font-size: 14px; color: #aaa;">رصيدك الحالي</div>
+        <div style="font-size: 32px; font-weight: bold; color: #ffd700;">${{ user.balance }}</div>
+        <div style="margin-top: 10px;">⭐ VIP Level: {{ user.vip }}</div>
+      </div>
 
-// ملاحظة: ضع رابط الـ Worker الخاص بك هنا
-const SERVER = "https://YOUR_WORKER.workers.dev";
-const isTG = !!window.Telegram?.WebApp;
-const tg = window.Telegram?.WebApp;
+      <div class="mine-btn" @click="handleMine">تعدين ⛏️</div>
 
-createApp({
-  setup() {
-    const user = ref({ balance: 0, vip: 0, referrals: 0 });
-    const loading = ref(false); // لمنع تكرار الضغط
-    const net = ref("TRC20");
-    const tx = ref("");
-    const wAmt = ref("");
-    const wAddr = ref("");
-
-    const depositTRC = "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto";
-    const depositBEP = "0x88bea8db94f9428f282b2cc375ec68ac67fd9200";
-
-    const tickerItems = ref([]);
-    let tickerTimer = null;
-
-    // --- دالة التواصل مع الخادم (محسنة) ---
-    const api = async (action, payload = {}) => {
-      if (!isTG) {
-        showToast("يرجى فتح التطبيق من داخل تيليجرام");
-        return null;
-      }
-
-      loading.value = true;
-      const toast = showLoadingToast({ message: 'جاري التحميل...', forbidClick: true });
-
-      try {
-        const res = await fetch(SERVER, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            initData: tg.initData,
-            action,
-            payload,
-          }),
-        });
-
-        const d = await res.json();
-        closeToast();
-
-        if (!d.ok) {
-          showToast(d.error || "حدث خطأ غير متوقع");
-          return d;
-        }
-
-        if (d.user) user.value = d.user; // تحديث بيانات المستخدم تلقائياً
-        
-        // تفعيل اهتزاز بسيط عند النجاح
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        
-        return d;
-      } catch (e) {
-        closeToast();
-        showToast("خطأ في الاتصال بالخادم");
-        return null;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const maskUser = (uid) => {
-      const s = String(uid);
-      return "User***" + s.slice(-4);
-    };
-
-    const loadTicker = async () => {
-      try {
-        const res = await fetch(SERVER, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            initData: tg.initData,
-            action: "get_withdrawals",
-          }),
-        });
-        const d = await res.json();
-        if (d.ok && Array.isArray(d.items)) {
-          tickerItems.value = d.items.map(i => ({
-            text: `⭐ VIP ${i.vipLevel} • ${maskUser(i.userId)} سحب ${i.amount}$ ✅`
-          }));
-        }
-      } catch (e) { console.error("Ticker fetch error", e); }
-    };
-
-    // دالة التعدين (Mining) مع منع السبام
-    const handleMine = async () => {
-      if (loading.value) return;
-      const res = await api("mine");
-      if (res?.ok) showToast("تم التعدين بنجاح! ⛏️");
-    };
-
-    // دالة الإيداع
-    const handleDeposit = async () => {
-      if (!tx.value) return showToast("أدخل هاش العملية أولاً");
-      const res = await api("deposit", { txid: tx.value, network: net.value });
-      if (res?.ok) {
-        showDialog({ title: 'تم الطلب', message: 'جاري مراجعة عملية الإيداع من قبل الإدارة.' });
-        tx.value = "";
-      }
-    };
-
-    // دالة السحب
-    const handleWithdraw = async () => {
-      const amount = parseFloat(wAmt.value);
-      if (!wAddr.value || isNaN(amount) || amount <= 0) return showToast("بيانات السحب غير صحيحة");
-      
-      const res = await api("withdraw", { amount: amount, wallet: wAddr.value });
-      if (res?.ok) {
-        showDialog({ title: 'تم طلب السحب', message: 'سيتم تحويل المبلغ لمحفظتك بعد المراجعة.' });
-        wAmt.value = "";
-        wAddr.value = "";
-      }
-    };
-
-    onMounted(async () => {
-      if (isTG) {
-        tg.expand(); // توسيع الواجهة لتملأ الشاشة
-        tg.ready();
-
-        // معالجة رابط الإحالة
-        const startParam = tg.initDataUnsafe?.start_param;
-        await api("login", {
-          ref: startParam ? startParam : null,
-        });
-
-        await loadTicker();
-        tickerTimer = setInterval(loadTicker, 20000); // تحديث كل 20 ثانية لتوفير الطلبات
-      } else {
-        showDialog({ title: "تنبيه", message: "يجب تشغيل هذا التطبيق داخل Telegram" });
-      }
-    });
-
-    onUnmounted(() => {
-      if (tickerTimer) clearInterval(tickerTimer);
-    });
-
-    return {
-      user, net, tx, wAmt, wAddr,
-      depositTRC, depositBEP, tickerItems, loading,
-      handleMine, handleDeposit, handleWithdraw
-    };
-  },
-}).use(vant).mount("#app");
-</script>
-
-<style>
-/* تحسين شكل شريط السحوبات */
-.withdraw-ticker {
-  position: fixed;
-  bottom: 80px;
-  width: 100%;
-  background: rgba(15, 15, 15, 0.95);
-  border-top: 1px solid #ffd70033;
-  overflow: hidden;
-  height: 40px;
-  z-index: 99;
-  display: flex;
-  align-items: center;
-}
-
-.withdraw-track {
-  display: flex;
-  gap: 50px;
-  white-space: nowrap;
-  animation: scrollLeft 30s linear infinite;
-}
-
-.withdraw-item {
-  color: #FFD700;
-  font-size: 13px;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
-}
-
-@keyframes scrollLeft {
-  0% { transform: translateX(100vw); }
-  100% { transform: translateX(-100%); }
-}
-
-/* تنسيقات إضافية للأزرار أثناء التحميل */
-.btn-loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-</style>
-
-<div class="withdraw-ticker" v-if="tickerItems.length">
-  <div class="withdraw-track">
-    <div class="withdraw-item" v-for="(t,i) in tickerItems" :key="i">
-      {{ t.text }}
+      <van-tabs v-model:active="activeTab" background="transparent" color="#ffd700" title-active-color="#ffd700">
+        <van-tab title="إيداع">
+          <div style="padding: 20px;">
+            <p style="font-size: 12px;">أرسل USDT (TRC20) للعنوان التالي:</p>
+            <code style="background: #222; padding: 5px;">TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto</code>
+            <van-field v-model="tx" placeholder="أدخل هاش العملية (TXID)" style="margin-top: 10px;"></van-field>
+            <van-button block type="primary" @click="handleDeposit" style="margin-top: 10px;">تأكيد الإيداع</van-button>
+          </div>
+        </van-tab>
+        <van-tab title="سحب">
+          <div style="padding: 20px;">
+            <van-field v-model="wAmt" type="number" placeholder="المبلغ"></van-field>
+            <van-field v-model="wAddr" placeholder="عنوان المحفظة"></van-field>
+            <van-button block type="success" @click="handleWithdraw" style="margin-top: 10px;">طلب سحب</van-button>
+          </div>
+        </van-tab>
+      </van-tabs>
     </div>
-    <div class="withdraw-item" v-for="(t,i) in tickerItems" :key="'copy-'+i">
-      {{ t.text }}
+
+    <div class="withdraw-ticker" v-if="tickerItems.length">
+      <div class="track">
+        <span v-for="t in tickerItems" style="color: #ffd700; font-size: 12px;">{{ t.text }}</span>
+      </div>
     </div>
   </div>
-</div>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    const SERVER = "https://your-worker-name.workers.dev"; // استبدله برابطك
+
+    createApp({
+      setup() {
+        const user = ref({ balance: 0, vip: 0 });
+        const tickerItems = ref([]);
+        const tx = ref('');
+        const wAmt = ref('');
+        const wAddr = ref('');
+        const activeTab = ref(0);
+        const tg = window.Telegram.WebApp;
+
+        const api = async (action, payload = {}) => {
+          try {
+            const res = await fetch(SERVER, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ initData: tg.initData, action, payload })
+            });
+            const d = await res.json();
+            if (d.ok && d.user) user.value = d.user;
+            return d;
+          } catch (e) { return { ok: false }; }
+        };
+
+        const handleMine = async () => {
+          const d = await api("mine");
+          if (d.ok) vant.showToast("تم التعدين! +0.01");
+          else vant.showToast(d.error);
+        };
+
+        const handleDeposit = async () => {
+          if (!tx.value) return;
+          await api("deposit", { txid: tx.value });
+          vant.showToast("تم إرسال الطلب للمراجعة");
+          tx.value = '';
+        };
+
+        const handleWithdraw = async () => {
+          const d = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value });
+          if (d.ok) vant.showToast("جاري معالجة السحب");
+          else vant.showToast(d.error);
+        };
+
+        onMounted(async () => {
+          tg.expand();
+          await api("login", { ref: tg.initDataUnsafe?.start_param });
+          const d = await api("get_withdrawals");
+          if (d.ok) tickerItems.value = d.items.map(i => ({ text: `⭐ VIP ${i.vipLevel} سحب ${i.amount}$ بنجاح ✅` }));
+        });
+
+        return { user, tickerItems, tx, wAmt, wAddr, activeTab, handleMine, handleDeposit, handleWithdraw };
+      }
+    }).use(vant).mount("#app");
+  </script>
+</body>
+</html>
