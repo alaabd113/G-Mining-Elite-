@@ -3,256 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة القيادة 👮‍♂️</title>
+    <title>TokenDrip Admin</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2196F3;
-            --success: #4CAF50;
+            --bg-color: #0f0f0f;
+            --card-bg: #1c1c1c;
+            --primary: #00E676;
             --danger: #f44336;
-            --surface: #1E1E1E;
-            --background: #121212;
-            --text: #ffffff;
-            --input-bg: #2C2C2C;
+            --text-color: #ffffff;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        
+
         body {
-            background: var(--background);
-            color: var(--text);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
             padding: 20px;
-            min-height: 100vh;
         }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        h1 {
+
+        .header {
             text-align: center;
-            margin-bottom: 24px;
-            font-size: 1.5rem;
+            margin-bottom: 30px;
         }
 
         .card {
-            background: var(--surface);
-            border-radius: 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
+
+        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; }
         
-        .section-title {
-            font-size: 1.1rem;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            color: var(--primary);
-        }
-        
-        .form-group {
-            margin-bottom: 12px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 0.9rem;
-            color: #aaa;
-        }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem; }
         
         input, select {
             width: 100%;
             padding: 12px;
-            border-radius: 8px;
+            background: #252525;
             border: 1px solid #444;
-            background: var(--input-bg);
+            border-radius: 8px;
             color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
+            font-family: inherit;
+            margin-bottom: 15px;
+            box-sizing: border-box;
         }
-        
-        input:focus, select:focus {
-            border-color: var(--primary);
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 14px;
+
+        input:focus { border-color: var(--primary); outline: none; }
+
+        .btn-group { display: flex; gap: 10px; }
+
+        button {
+            flex: 1;
+            padding: 12px;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: transform 0.1s;
+            font-family: inherit;
+            transition: 0.2s;
         }
-        
-        .btn:active {
-            transform: scale(0.98);
+
+        .btn-approve { background: var(--primary); color: #000; }
+        .btn-reject { background: var(--danger); color: white; }
+        .btn-blue { background: #2196F3; color: white; }
+
+        button:active { transform: scale(0.95); opacity: 0.9; }
+
+        .note {
+            font-size: 0.8rem;
+            color: #666;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
         }
-        
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; margin-top: 10px; }
-        
-        /* Loading Overlay */
-        #loader {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>🛡️ لوحة التحكم</h1>
+        <p style="color: #666;">إدارة السحوبات والإيداعات</p>
+    </div>
 
-    <div id="loader"><div class="spinner"></div></div>
-
-    <div class="container">
-        <h1>⚙️ لوحة تحكم الأدمن</h1>
-        
-        <div class="card">
-            <h3 class="section-title">إدارة رصيد المستخدمين</h3>
-            
-            <div class="form-group">
-                <label>معرف المستخدم (User ID)</label>
-                <input type="number" id="userId" placeholder="مثال: 123456789">
-            </div>
-            
-            <div class="form-group">
-                <label>إضافة رصيد (USDT)</label>
-                <input type="number" id="addBalance" placeholder="0.00" step="0.01">
-            </div>
-            
-            <div class="form-group">
-                <label>تغيير مستوى VIP</label>
-                <select id="vipLevel">
-                    <option value="-1">-- لا تغيير --</option>
-                    <option value="0">VIP 0</option>
-                    <option value="1">VIP 1</option>
-                    <option value="2">VIP 2</option>
-                    <option value="3">VIP 3</option>
-                </select>
-            </div>
-            
-            <button class="btn btn-primary" onclick="submitUserUpdate()">تحديث البيانات 💾</button>
+    <div class="card">
+        <h3>⚡ معالجة طلب (سحب/إيداع)</h3>
+        <div class="note">
+            يصلك إشعار على البوت يحتوي على: User ID و TX_REF. انسخهم هنا.
         </div>
 
-        <div class="card">
-            <h3 class="section-title">عمليات السحب</h3>
-            
-            <div class="form-group">
-                <label>مفتاح العملية (Transaction Key)</label>
-                <input type="text" id="withdrawKey" placeholder="الصق المفتاح هنا...">
-            </div>
-            
-            <button class="btn btn-success" onclick="approveWithdraw()">✅ اعتماد السحب</button>
+        <label>معرف المستخدم (User ID)</label>
+        <input type="text" id="targetId" placeholder="مثلاً: 123456789">
+
+        <label>مفتاح العملية (TX_REF / Key)</label>
+        <input type="text" id="txRef" placeholder="مثلاً: dep_17099... أو wd_17099...">
+
+        <div class="btn-group">
+            <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
+            <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض</button>
         </div>
     </div>
 
+    <div class="card">
+        <h3>🛠️ تعديل يدوي لمستخدم</h3>
+        <div class="note">
+            تنبيه: هذا التعديل لا يظهر في السجل، يستخدم للطوارئ فقط.
+        </div>
+
+        <label>معرف المستخدم</label>
+        <input type="text" id="manualId" placeholder="User ID">
+
+        <label>إضافة رصيد (أدخل سالب للخصم)</label>
+        <input type="number" id="manualBalance" placeholder="0.00">
+
+        <label>تغيير مستوى VIP</label>
+        <select id="manualVip">
+            <option value="">-- لا تغيير --</option>
+            <option value="0">VIP 0 (Free)</option>
+            <option value="1">VIP 1 (Basic)</option>
+            <option value="2">VIP 2 (Pro)</option>
+            <option value="3">VIP 3 (Elite)</option>
+        </select>
+
+        <button class="btn-blue" onclick="manualUpdate()">تحديث البيانات</button>
+    </div>
+
     <script>
-        // رابط الوركر الخاص بك
-        const SERVER_URL = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+        // ⚠️ تأكد من أن هذا الرابط مطابق لملفك في Cloudflare
+        const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+        const tg = window.Telegram.WebApp;
+        
+        // توسيع الصفحة
+        tg.expand();
 
-        // تهيئة تيليجرام
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand(); // توسيع للشاشة الكاملة
-
-        // دالة عرض التحميل
-        const toggleLoader = (show) => {
-            document.getElementById('loader').style.display = show ? 'flex' : 'none';
-        };
-
-        // دالة الاتصال الموحدة بالسيرفر
-        async function sendAdminRequest(payload) {
-            // 1. التحقق من البيئة
-            if (!window.Telegram.WebApp.initData) {
-                window.Telegram.WebApp.showAlert("⚠️ خطأ: يجب فتح اللوحة من داخل تيليجرام فقط!");
-                return;
-            }
-
-            toggleLoader(true);
-
+        async function api(action, payload) {
+            // إظهار تحميل
+            tg.MainButton.showProgress();
+            
             try {
-                const response = await fetch(SERVER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch(SERVER, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        action: 'admin_action',
-                        initData: window.Telegram.WebApp.initData, // التوثيق الأمني
-                        payload: payload
+                        initData: tg.initData, // ضروري جداً للتحقق من أنك الأدمن
+                        action,
+                        payload
                     })
                 });
-
-                const data = await response.json();
-                toggleLoader(false);
-
-                if (data.ok) {
-                    window.Telegram.WebApp.showAlert(`✅ نجاح: ${data.message || 'تمت العملية'}`);
-                    // تنظيف الحقول بعد النجاح
-                    if(payload.addBal) document.getElementById('addBalance').value = '';
-                } else {
-                    window.Telegram.WebApp.showAlert(`❌ خطأ: ${data.error}`);
-                }
-
-            } catch (error) {
-                toggleLoader(false);
-                window.Telegram.WebApp.showAlert("❌ فشل الاتصال بالخادم");
-                console.error(error);
+                const data = await res.json();
+                tg.MainButton.hideProgress();
+                return data;
+            } catch (e) {
+                tg.MainButton.hideProgress();
+                alert("خطأ في الاتصال: " + e.message);
+                return { ok: false };
             }
         }
 
-        // دالة تحديث المستخدم
-        function submitUserUpdate() {
-            const userId = document.getElementById('userId').value;
-            const addBal = document.getElementById('addBalance').value;
-            const vipLevel = document.getElementById('vipLevel').value;
+        async function updateStatus(status) {
+            const targetId = document.getElementById('targetId').value;
+            const txRef = document.getElementById('txRef').value;
 
-            if (!userId) {
-                window.Telegram.WebApp.showAlert("الرجاء إدخال معرف المستخدم!");
-                return;
+            if (!targetId || !txRef) {
+                return alert("الرجاء إدخال User ID ومفتاح العملية TX_REF");
             }
 
-            // بناء البيانات المرسلة
-            const payload = { targetId: Number(userId) };
-            
-            if (addBal) payload.addBal = Number(addBal);
-            if (vipLevel !== "-1") payload.setVip = Number(vipLevel);
+            if(!confirm(`هل أنت متأكد من ${status === 'approved' ? 'الموافقة' : 'الرفض'}؟`)) return;
 
-            if (!payload.addBal && !payload.setVip && payload.setVip !== 0) {
-                window.Telegram.WebApp.showAlert("الرجاء إدخال قيمة لتحديثها (رصيد أو مستوى)!");
-                return;
+            const data = await api("admin_update_status", {
+                targetUserId: targetId,
+                txRef: txRef,
+                status: status
+            });
+
+            if (data.ok) {
+                alert(`تمت العملية: ${status}`);
+                // تفريغ الحقول
+                document.getElementById('targetId').value = '';
+                document.getElementById('txRef').value = '';
+            } else {
+                alert("فشل: " + (data.error || "تأكد أنك تستخدم حساب الأدمن وتفتح الصفحة من داخل البوت"));
             }
-
-            sendAdminRequest(payload);
         }
 
-        // دالة اعتماد السحب
-        function approveWithdraw() {
-            const key = document.getElementById('withdrawKey').value;
-            if (!key) {
-                window.Telegram.WebApp.showAlert("الرجاء إدخال مفتاح العملية!");
-                return;
-            }
-            sendAdminRequest({ approveKey: key });
+        async function manualUpdate() {
+            alert("هذه الميزة تتطلب تفعيل 'admin_manual_edit' في الوركر. حالياً استخدم الموافقة على الإيداعات للتحكم بالرصيد.");
         }
     </script>
 </body>
