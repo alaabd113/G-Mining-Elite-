@@ -1,35 +1,46 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>Admin - TokenDrip</title>
+  <title>Admin Panel - Elite</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
   <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
 </head>
-<body style="background: #111; color: white; padding: 20px;">
+<body style="background: #111; color: #fff; padding: 20px;">
   <div id="app">
-    <h3>⚙️ لوحة الأدمن</h3>
-    <van-field v-model="uid" label="User ID" placeholder="ID"></van-field>
-    <van-field v-model="bal" label="Add Balance" type="number" placeholder="0.00"></van-field>
-    <van-button block type="primary" @click="update" style="margin-top: 10px;">تحديث</van-button>
-    <hr style="margin: 20px 0; opacity: 0.2;">
-    <van-field v-model="wKey" label="Withdraw Key" placeholder="انسخ المفتاح"></van-field>
-    <van-button block type="success" @click="approve" style="margin-top: 10px;">اعتماد السحب</van-button>
+    <h3>⚙️ لوحة تحكم الأدمن</h3>
+    <van-cell-group inset>
+      <van-field v-model="uid" label="ID المستخدم" placeholder="مثال: 921301895"></van-field>
+      <van-field v-model="bal" label="شحن رصيد" type="number" placeholder="0.00"></van-field>
+      <van-field v-model="vip" label="تفعيل VIP" type="digit" placeholder="1, 2, 3..."></van-field>
+    </van-cell-group>
+    <van-button block type="primary" @click="update" style="margin-top: 15px;">تحديث المستخدم</van-button>
+    
+    <van-divider>اعتماد السحب (للشريط)</van-divider>
+    <van-field v-model="wKey" label="مفتاح السحب" placeholder="w:userId:timestamp"></van-field>
+    <van-button block type="success" @click="approve" style="margin-top: 10px;">اعتماد ونشر في الشريط ✅</van-button>
   </div>
+
   <script>
     const { createApp, ref } = Vue;
     const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+
     createApp({
       setup() {
-        const uid = ref(''), bal = ref(''), wKey = ref('');
+        const uid = ref(''), bal = ref(''), vip = ref(''), wKey = ref('');
         const call = async (payload) => {
-          const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: window.Telegram.WebApp.initData, action: "admin_action", payload }) });
+          const res = await fetch(SERVER, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData: window.Telegram.WebApp.initData, action: "admin_action", payload })
+          });
           const d = await res.json();
-          vant.showToast(d.ok ? "Done" : "Error");
+          vant.showToast(d.ok ? "تمت العملية" : d.error);
         };
-        return { uid, bal, wKey, update: () => call({ targetId: Number(uid.value), addBalance: Number(bal.value) }), approve: () => call({ approveWithdrawKey: wKey.value }) };
+        const update = () => call({ targetId: Number(uid.value), addBal: Number(bal.value || 0), setVip: Number(vip.value) });
+        const approve = () => call({ approveKey: wKey.value });
+        return { uid, bal, vip, wKey, update, approve };
       }
     }).use(vant).mount("#app");
   </script>
