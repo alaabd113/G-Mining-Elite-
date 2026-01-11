@@ -1,273 +1,138 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الأدمن</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --primary: #2196F3;
-            --success: #4CAF50;
-            --danger: #f44336;
-            --surface: #1E1E1E;
-            --text: #ffffff;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        
-        body {
-            background: var(--surface);
-            color: var(--text);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .dashboard {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-        
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-        
-        .section {
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .section-title {
-            font-size: 1rem;
-            margin-bottom: 16px;
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .form-group {
-            margin-bottom: 12px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.9);
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 1rem;
-        }
-        
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 1rem;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        
-        .btn:active {
-            opacity: 0.8;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            border-radius: 8px;
-            background: rgba(0,0,0,0.9);
-            color: white;
-            font-size: 0.9rem;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg:#1e1e1e;
+  --card:rgba(255,255,255,.05);
+  --text:#fff;
+  --primary:#2196f3;
+  --success:#4caf50;
+}
+
+* { box-sizing:border-box; font-family:system-ui }
+
+html,body { height:100%; margin:0 }
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+.container { max-width:600px; margin:auto; padding:16px }
+.card {
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+
+input,select,button {
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:8px;
+  border:none;
+}
+
+button { cursor:pointer }
+.primary { background:var(--primary); color:#fff }
+.success { background:var(--success); color:#fff }
+
+.toast {
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#000;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:8px;
+}
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="dashboard">
-            <div class="header">
-                <span style="font-size: 24px;">⚙️</span>
-                <h1>لوحة تحكم الأدمن</h1>
-            </div>
-            
-            <div class="section">
-                <h2 class="section-title">إدارة المستخدمين</h2>
-                <div class="form-group">
-                    <label class="form-label">معرف المستخدم (User ID)</label>
-                    <input type="text" id="userId" class="form-input" placeholder="أدخل معرف المستخدم">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">إضافة رصيد</label>
-                    <input type="number" id="balance" class="form-input" placeholder="0.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">مستوى VIP</label>
-                    <select id="vipLevel" class="form-select">
-                        <option value="0">مستوى 0</option>
-                        <option value="1">مستوى 1</option>
-                        <option value="2">مستوى 2</option>
-                        <option value="3">مستوى 3</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" onclick="updateUser()">تحديث المستخدم</button>
-            </div>
-            
-            <div class="section">
-                <h2 class="section-title">اعتماد السحوبات</h2>
-                <div class="form-group">
-                    <label class="form-label">مفتاح السحب</label>
-                    <input type="text" id="withdrawKey" class="form-input" placeholder="w:userId:timestamp">
-                </div>
-                <button class="btn btn-success" onclick="approveWithdraw()">اعتماد ونشر في الشريط ✅</button>
-            </div>
-        </div>
-    </div>
+<div class="container">
 
-    <script>
-        const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
-        let toastTimeout;
+<h2>⚙️ لوحة تحكم الأدمن</h2>
 
-        function showToast(message, type = 'success') {
-            // إزالة التوست السابق إذا وجد
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            clearTimeout(toastTimeout);
+<div class="card">
+  <input id="userId" placeholder="User ID">
+  <input id="balance" type="number" step="0.01" placeholder="Add Balance">
+  <select id="vip">
+    <option value="0">FREE</option>
+    <option value="1">BASIC</option>
+    <option value="2">PRO</option>
+    <option value="3">ELITE</option>
+  </select>
+  <button class="primary" onclick="updateUser()">تحديث المستخدم</button>
+</div>
 
-            // إنشاء توست جديد
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            toast.style.background = type === 'error' ? 'var(--danger)' : 'var(--success)';
-            document.body.appendChild(toast);
+<div class="card">
+  <input id="wkey" placeholder="Withdraw Key">
+  <button class="success" onclick="approve()">اعتماد السحب</button>
+</div>
 
-            // إزالة التوست بعد 3 ثواني
-            toastTimeout = setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
+</div>
 
-        async function callServer(payload) {
-            try {
-                // التحقق من هوية المستخدم
-                const currentUserId = 921301895; // معرف المستخدم المصرح له
-                const providedUserId = Number(document.getElementById('userId').value);
-                
-                if (!window.Telegram.WebApp.initData) {
-                    throw new Error('غير مصرح بالوصول');
-                }
+<script>
+const tg = window.Telegram.WebApp;
+const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
 
-                const response = await fetch(SERVER, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        initData: window.Telegram.WebApp.initData,
-                        action: "admin_action",
-                        payload
-                    })
-                });
+if (!tg?.initDataUnsafe?.user) {
+  document.body.innerHTML = "❌ ACCESS DENIED";
+  throw new Error("Not Telegram");
+}
 
-                const data = await response.json();
-                
-                if (data.ok) {
-                    showToast('تمت العملية بنجاح');
-                    return true;
-                } else {
-                    throw new Error(data.error || 'حدث خطأ');
-                }
-            } catch (error) {
-                showToast(error.message, 'error');
-                return false;
-            }
-        }
+tg.ready();
+tg.expand();
 
-        async function updateUser() {
-            const userId = document.getElementById('userId').value;
-            const balance = document.getElementById('balance').value;
-            const vipLevel = document.getElementById('vipLevel').value;
+document.documentElement.style.setProperty(
+  "--bg",
+  tg.themeParams.bg_color || "#1e1e1e"
+);
 
-            if (!userId) {
-                showToast('يرجى إدخال معرف المستخدم', 'error');
-                return;
-            }
+function toast(msg) {
+  const t=document.createElement("div");
+  t.className="toast";
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
 
-            await callServer({
-                targetId: Number(userId),
-                addBal: Number(balance),
-                setVip: Number(vipLevel)
-            });
-        }
+async function api(payload) {
+  const r = await fetch(SERVER,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      initData:tg.initData,
+      action:"admin_action",
+      payload
+    })
+  });
+  return r.json();
+}
 
-        async function approveWithdraw() {
-            const withdrawKey = document.getElementById('withdrawKey').value;
-            
-            if (!withdrawKey) {
-                showToast('يرجى إدخال مفتاح السحب', 'error');
-                return;
-            }
+async function updateUser() {
+  const d = await api({
+    targetId:+userId.value,
+    addBal:+balance.value,
+    setVip:+vip.value
+  });
+  toast(d.ok?"تم":"خطأ");
+}
 
-            await callServer({
-                approveKey: withdrawKey
-            });
-        }
-    </script>
+async function approve() {
+  const d = await api({ approveKey:wkey.value });
+  toast(d.ok?"تم":"خطأ");
+}
+</script>
 </body>
 </html>
