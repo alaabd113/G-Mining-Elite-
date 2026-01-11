@@ -1,71 +1,35 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TokenDrip Mining</title>
+  <title>Admin - TokenDrip</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
   <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
-  <style>
-    [v-cloak] { display: none; }
-    body { background: #0a0a0a; color: white; text-align: center; font-family: sans-serif; }
-    .card { background: #1a1a1a; padding: 25px; border-radius: 15px; margin: 20px; border: 1px solid #ffd70033; }
-    .mine-btn { width: 140px; height: 140px; border-radius: 50%; background: #ffd700; color: #000; font-weight: bold; border: 5px solid #333; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 15px #ffd70055; }
-    .ticker { position: fixed; bottom: 0; width: 100%; background: #000; height: 35px; overflow: hidden; border-top: 1px solid #333; }
-    .track { display: flex; gap: 40px; animation: scroll 15s linear infinite; white-space: nowrap; align-items: center; height: 100%; }
-    @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-  </style>
 </head>
-<body>
-  <div id="app" v-cloak>
-    <div class="card">
-      <div style="color: #aaa;">رصيدك المتوفر</div>
-      <div style="font-size: 30px; color: #ffd700;">${{ user.balance }}</div>
-      <div style="font-size: 12px; margin-top: 5px;">VIP: {{ user.vip }} | referrals: {{ user.referrals }}</div>
-    </div>
-    <div class="mine-btn" @click="doMine">START MINE ⛏️</div>
-    <van-tabs background="transparent" color="#ffd700" title-active-color="#ffd700" title-inactive-color="#888">
-      <van-tab title="Deposit">
-        <div style="padding: 15px; font-size: 13px;">Address (USDT TRC20):<br><code>TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto</code></div>
-      </van-tab>
-      <van-tab title="Withdraw">
-        <div style="padding: 15px;"><van-button block type="primary" size="small">طلب سحب</van-button></div>
-      </van-tab>
-    </van-tabs>
-    <div class="ticker" v-if="ticker.length">
-      <div class="track">
-        <span v-for="t in ticker" style="color: #ffd700; font-size: 11px;">{{ t.text }}</span>
-      </div>
-    </div>
+<body style="background: #111; color: white; padding: 20px;">
+  <div id="app">
+    <h3>⚙️ لوحة الأدمن</h3>
+    <van-field v-model="uid" label="User ID" placeholder="ID"></van-field>
+    <van-field v-model="bal" label="Add Balance" type="number" placeholder="0.00"></van-field>
+    <van-button block type="primary" @click="update" style="margin-top: 10px;">تحديث</van-button>
+    <hr style="margin: 20px 0; opacity: 0.2;">
+    <van-field v-model="wKey" label="Withdraw Key" placeholder="انسخ المفتاح"></van-field>
+    <van-button block type="success" @click="approve" style="margin-top: 10px;">اعتماد السحب</van-button>
   </div>
   <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref } = Vue;
     const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
     createApp({
       setup() {
-        const user = ref({ balance: 0, vip: 0, referrals: 0 });
-        const ticker = ref([]);
-        const tg = window.Telegram.WebApp;
-        const api = async (action, payload = {}) => {
-          const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) });
+        const uid = ref(''), bal = ref(''), wKey = ref('');
+        const call = async (payload) => {
+          const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: window.Telegram.WebApp.initData, action: "admin_action", payload }) });
           const d = await res.json();
-          if (d.ok && d.user) user.value = d.user;
-          return d;
+          vant.showToast(d.ok ? "Done" : "Error");
         };
-        const doMine = async () => {
-          const d = await api("mine");
-          if (d.ok) vant.showToast("+0.01 ⛏️");
-          else vant.showToast("Wait cooldown");
-        };
-        onMounted(async () => {
-          tg.expand();
-          await api("login", { ref: tg.initDataUnsafe?.start_param });
-          const d = await api("get_withdrawals");
-          if (d.ok) ticker.value = d.items.map(i => ({ text: `User***${String(i.userId).slice(-3)} سحب ${i.amount}$ ✅` }));
-        });
-        return { user, ticker, doMine };
+        return { uid, bal, wKey, update: () => call({ targetId: Number(uid.value), addBalance: Number(bal.value) }), approve: () => call({ approveWithdrawKey: wKey.value }) };
       }
     }).use(vant).mount("#app");
   </script>
