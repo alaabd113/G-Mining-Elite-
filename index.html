@@ -1,222 +1,204 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GoldDrip Global Elite</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
-    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/vant@4/lib/index.css" />
-    <script src="https://fastly.jsdelivr.net/npm/vant@4/lib/vant.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        :root { --gold: #FFD700; --dark: #0a0a0a; --glass: rgba(255, 255, 255, 0.05); }
-        body { background: var(--dark); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding-bottom: 120px; overflow-x: hidden; }
-        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; margin: 15px; }
-        .gold-text { background: linear-gradient(45deg, #FFD700, #FDB931, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-        
-        /* أشرطة الإشعارات */
-        .top-notice { background: rgba(255, 215, 0, 0.1) !important; color: var(--gold) !important; font-size: 11px !important; }
-        .bottom-ad { position: fixed; bottom: 85px; width: 100%; background: rgba(0,0,0,0.9); border-top: 1px solid #333; height: 35px; z-index: 99; font-size: 11px; }
-
-        /* خيارات الإيداع المتطورة */
-        .deposit-box { border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; transition: 0.3s; cursor: pointer; }
-        .deposit-box.selected { border-color: var(--gold); background: rgba(255,215,0,0.05); }
-        .crypto-icon { width: 32px; height: 32px; }
-
-        /* كروت VIP */
-        .vip-card { background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,0,0,0.6) 100%); border: 1px solid rgba(255,215,0,0.2); border-radius: 24px; padding: 20px; margin-bottom: 15px; }
-        
-        /* شريط التنقل */
-        .nav-footer { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15,15,15,0.98); border-radius: 20px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid #333; z-index: 1000; }
-        .nav-item { color: #666; text-align: center; font-size: 11px; }
-        .nav-item.active { color: var(--gold); }
-
-        /* تعريب المكتبة وإلغاء الصينية */
-        .van-dialog { border-radius: 24px !important; background: #1a1a1a !important; color: #fff !important; }
-        .van-dialog__header { color: var(--gold) !important; padding-top: 20px !important; }
-        .van-button--default { background: #2a2a2a !important; color: #fff !important; border: none !important; }
-        .van-button--primary { background: var(--gold) !important; color: #000 !important; font-weight: bold !important; }
-        .van-field__label { color: #888 !important; }
-        .van-field__control { color: #fff !important; }
-    </style>
-</head>
-<body>
-<div id="app" v-cloak>
-    <van-notice-bar class="top-notice" left-icon="volume-o" :text="withdrawalLog" scrollable />
-
-    <div v-if="activeTab === 'home'">
-        <div class="glass-card" style="text-align: center;">
-            <p style="color: #888; margin:0; font-size: 13px;">الرصيد المتاح</p>
-            <h1 class="gold-text" style="font-size: 45px; margin: 10px 0;">${{ (user?.balance || 0).toFixed(4) }}</h1>
-            <div style="font-size: 12px; opacity: 0.9;">
-                <span class="gold-text">VIP {{ user?.vip || 0 }}</span> | سرعة التعدين: {{ speedMultiplier }}x
-            </div>
-        </div>
-
-        <div style="text-align: center; margin: 35px 0;">
-            <div style="width: 175px; height: 175px; border-radius: 50%; border: 4px solid var(--gold); margin: 0 auto; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 70%); cursor: pointer; transition: 0.2s;" @click="handleMine">
-                <i class="fa-solid fa-microchip" style="font-size: 75px; color: var(--gold); filter: drop-shadow(0 0 10px var(--gold));"></i>
-            </div>
-            <p style="margin-top: 15px; font-size: 14px; color: #666;">انقر لتوليد الذهب الرقمي</p>
-        </div>
-
-        <div style="display: flex; gap: 12px; padding: 0 15px;">
-            <van-button block round plain color="#FFD700" @click="showWithdraw=true">سحب</van-button>
-            <van-button block round color="linear-gradient(45deg, #FFD700, #B8860B)" @click="showDeposit=true">
-                <span style="color:#000; font-weight:bold">إيداع</span>
-            </van-button>
-        </div>
-    </div>
-
-    <div v-if="activeTab === 'plans'" style="padding: 15px;">
-        <h2 class="gold-text" style="text-align: center;">خطط الاستثمار الملكية 👑</h2>
-        
-        <div class="vip-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="font-size: 18px;">عضوية VIP 1</b>
-                <b class="gold-text" style="font-size: 22px;">$1.00</b>
-            </div>
-            <p style="font-size: 12px; color: #ccc; margin: 10px 0;">• الربح اليومي: <b>$0.15</b><br>• تفتح ميزة السحب فوراً (بدون حواجز)</p>
-            <van-button block round color="#FFD700" size="small" @click="activatePlan('1')">
-                <span style="color:#000; font-weight:bold">تفعيل العضوية الآن</span>
-            </van-button>
-        </div>
-
-        <div class="vip-card" style="border-color: #00ff00;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="font-size: 18px;">عضوية VIP 2</b>
-                <b style="font-size: 22px; color: #00ff00;">$5.00</b>
-            </div>
-            <p style="font-size: 12px; color: #ccc; margin: 10px 0;">• الربح اليومي: <b>$1.00</b><br>• زيادة سرعة التعدين +30% وسقف سحب مرتفع</p>
-            <van-button block round color="#00ff00" size="small" @click="activatePlan('5')">
-                <span style="color:#000; font-weight:bold">تفعيل العضوية الآن</span>
-            </van-button>
-        </div>
-    </div>
-
-    <van-notice-bar v-if="activeTab === 'home'" class="bottom-ad" color="#FFD700" text="استثمر الآن في باقات VIP لفتح ميزة السحب الفوري ومضاعفة أرباحك اليومية بضغطة زر!" />
-
-    <div class="nav-footer">
-        <div class="nav-item" :class="{active: activeTab==='home'}" @click="activeTab='home'"><i class="fa-solid fa-house-crack" style="font-size:20px;"></i><div>الرئيسية</div></div>
-        <div class="nav-item" :class="{active: activeTab==='plans'}" @click="activeTab='plans'"><i class="fa-solid fa-crown" style="font-size:20px;"></i><div>VIP</div></div>
-        <div class="nav-item" @click="activeTab='about'"><i class="fa-solid fa-shield-halved" style="font-size:20px;"></i><div>الأمان</div></div>
-    </div>
-
-    <van-dialog v-model:show="showDeposit" title="شحن الرصيد" show-cancel-button confirm-button-text="تأكيد" cancel-button-text="إلغاء" @confirm="handleDeposit">
-        <div style="padding: 20px;">
-            <p style="font-size:12px; color:#aaa; margin-bottom:15px; text-align:center;">اختر العملة لإظهار عنوان المحفظة:</p>
-            
-            <div class="deposit-box" :class="{selected: net==='TRC20'}" @click="net='TRC20'">
-                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="crypto-icon">
-                <div><b>USDT (TRC20)</b><div style="font-size:10px; color:#666;">شبكة Tron السريعة</div></div>
-            </div>
-
-            <div class="deposit-box" :class="{selected: net==='BEP20'}" @click="net='BEP20'">
-                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" class="crypto-icon">
-                <div><b>USDT (BEP20)</b><div style="font-size:10px; color:#666;">شبكة Binance الذكية</div></div>
-            </div>
-
-            <div style="background: rgba(255,215,0,0.05); border: 1px dashed var(--gold); border-radius: 12px; padding: 12px; font-size: 11px; word-break: break-all; text-align: center; color: var(--gold); margin: 15px 0;">
-                {{ net==='TRC20' ? 'TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto' : '0x88bea8db94f9428f282b2cc375ec68ac67fd9200' }}
-            </div>
-            
-            <van-field v-model="tx" label="رقم العملية" placeholder="أدخل الـ TXID هنا" style="background:#222; border-radius:8px;"></van-field>
-        </div>
-    </van-dialog>
-
-    <van-dialog v-model:show="showWithdraw" title="سحب الأرباح" show-cancel-button confirm-button-text="سحب" cancel-button-text="إلغاء" @confirm="handleWithdraw">
-        <div style="padding: 20px;">
-            <van-field v-model="wAmt" type="number" label="المبلغ ($)" placeholder="أقل مبلغ 2$"></van-field>
-            <van-field v-model="wAddr" label="المحفظة" placeholder="عنوان USDT الخاص بك"></van-field>
-        </div>
-    </van-dialog>
-</div>
-
 <script>
-    const { createApp, ref, onMounted, computed } = Vue;
-    const { showToast, showDialog } = vant;
-    const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+const { createApp, ref, onMounted, onUnmounted } = Vue;
+const { showToast, showDialog, showLoadingToast, closeToast } = vant;
 
-    createApp({
-        setup() {
-            // حل مشكلة Undefined: تهيئة الكائن فوراً
-            const user = ref({ balance: 0, referralCount: 0, vip: 0 });
-            const activeTab = ref('home');
-            const userId = ref("");
-            const showDeposit = ref(false);
-            const showWithdraw = ref(false);
-            const net = ref("TRC20");
-            const tx = ref("");
-            const wAmt = ref("");
-            const wAddr = ref("");
-            const withdrawalLog = ref("جاري تحديث سجل السحوبات المباشرة...");
+// ملاحظة: ضع رابط الـ Worker الخاص بك هنا
+const SERVER = "https://YOUR_WORKER.workers.dev";
+const isTG = !!window.Telegram?.WebApp;
+const tg = window.Telegram?.WebApp;
 
-            const speedMultiplier = computed(() => (1 + (user.value?.referralCount || 0) * 0.1).toFixed(1));
+createApp({
+  setup() {
+    const user = ref({ balance: 0, vip: 0, referrals: 0 });
+    const loading = ref(false); // لمنع تكرار الضغط
+    const net = ref("TRC20");
+    const tx = ref("");
+    const wAmt = ref("");
+    const wAddr = ref("");
 
-            onMounted(async () => {
-                if (window.Telegram?.WebApp) {
-                    const tg = window.Telegram.WebApp;
-                    tg.expand();
-                    tg.ready();
-                    if (tg.initDataUnsafe?.user) {
-                        userId.value = tg.initDataUnsafe.user.id;
-                        await apiRequest('login');
-                    }
-                }
-                // سجل سحوبات وهمي لزيادة المصداقية
-                setInterval(() => {
-                    const id = Math.floor(Math.random() * 99);
-                    const amt = (Math.random() * 10 + 2).toFixed(1);
-                    withdrawalLog.value = `مبروك! العضو User***${id} قام بسحب ${amt}$ بنجاح عبر شبكة ${net.value}.`;
-                }, 8000);
-            });
+    const depositTRC = "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto";
+    const depositBEP = "0x88bea8db94f9428f282b2cc375ec68ac67fd9200";
 
-            const apiRequest = async (action, data = {}) => {
-                try {
-                    const res = await fetch(SERVER, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action, userId: userId.value, ...data })
-                    });
-                    const result = await res.json();
-                    if (result && !result.error) {
-                        user.value = result.balance !== undefined ? result : result.user;
-                        return result;
-                    } else if (result?.error) showToast(result.error);
-                } catch (e) { 
-                    console.log("Connection Error"); 
-                }
-            };
+    const tickerItems = ref([]);
+    let tickerTimer = null;
 
-            const handleMine = () => {
-                // منع الخطأ: التحقق من وجود المعرف قبل التنفيذ
-                if (!userId.value) return showToast("يرجى الانتظار ثانية...");
-                if (window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                apiRequest('mine', { amount: 0.01 });
-            };
+    // --- دالة التواصل مع الخادم (محسنة) ---
+    const api = async (action, payload = {}) => {
+      if (!isTG) {
+        showToast("يرجى فتح التطبيق من داخل تيليجرام");
+        return null;
+      }
 
-            const activatePlan = (price) => {
-                showToast(`يرجى إيداع ${price}$ لتفعيل الباقة`);
-                showDeposit.value = true;
-            };
+      loading.value = true;
+      const toast = showLoadingToast({ message: 'جاري التحميل...', forbidClick: true });
 
-            const handleDeposit = async () => {
-                if(!tx.value) return showToast('أدخل الـ TXID للمراجعة');
-                await apiRequest('request_deposit', { txId: tx.value, network: net.value });
-                showDialog({ message: 'تم استلام طلبك! سيقوم الأدمن بمراجعة العملية وتفعيل حسابك خلال دقائق ✅' });
-            };
+      try {
+        const res = await fetch(SERVER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            initData: tg.initData,
+            action,
+            payload,
+          }),
+        });
 
-            const handleWithdraw = async () => {
-                if (user.value.vip < 1) return showDialog({ message: 'تنبيه: السحب متاح فقط لمشتركي VIP 1 وما فوق لضمان أمان السيولة.' });
-                await apiRequest('request_withdraw', { amount: wAmt.value, wallet: wAddr.value });
-            };
+        const d = await res.json();
+        closeToast();
 
-            return { user, activeTab, speedMultiplier, showDeposit, showWithdraw, net, tx, wAmt, wAddr, withdrawalLog, handleMine, activatePlan, handleDeposit, handleWithdraw };
+        if (!d.ok) {
+          showToast(d.error || "حدث خطأ غير متوقع");
+          return d;
         }
-    }).use(vant).mount('#app');
-</script>
-</body>
-    </html>
+
+        if (d.user) user.value = d.user; // تحديث بيانات المستخدم تلقائياً
         
+        // تفعيل اهتزاز بسيط عند النجاح
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        
+        return d;
+      } catch (e) {
+        closeToast();
+        showToast("خطأ في الاتصال بالخادم");
+        return null;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const maskUser = (uid) => {
+      const s = String(uid);
+      return "User***" + s.slice(-4);
+    };
+
+    const loadTicker = async () => {
+      try {
+        const res = await fetch(SERVER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            initData: tg.initData,
+            action: "get_withdrawals",
+          }),
+        });
+        const d = await res.json();
+        if (d.ok && Array.isArray(d.items)) {
+          tickerItems.value = d.items.map(i => ({
+            text: `⭐ VIP ${i.vipLevel} • ${maskUser(i.userId)} سحب ${i.amount}$ ✅`
+          }));
+        }
+      } catch (e) { console.error("Ticker fetch error", e); }
+    };
+
+    // دالة التعدين (Mining) مع منع السبام
+    const handleMine = async () => {
+      if (loading.value) return;
+      const res = await api("mine");
+      if (res?.ok) showToast("تم التعدين بنجاح! ⛏️");
+    };
+
+    // دالة الإيداع
+    const handleDeposit = async () => {
+      if (!tx.value) return showToast("أدخل هاش العملية أولاً");
+      const res = await api("deposit", { txid: tx.value, network: net.value });
+      if (res?.ok) {
+        showDialog({ title: 'تم الطلب', message: 'جاري مراجعة عملية الإيداع من قبل الإدارة.' });
+        tx.value = "";
+      }
+    };
+
+    // دالة السحب
+    const handleWithdraw = async () => {
+      const amount = parseFloat(wAmt.value);
+      if (!wAddr.value || isNaN(amount) || amount <= 0) return showToast("بيانات السحب غير صحيحة");
+      
+      const res = await api("withdraw", { amount: amount, wallet: wAddr.value });
+      if (res?.ok) {
+        showDialog({ title: 'تم طلب السحب', message: 'سيتم تحويل المبلغ لمحفظتك بعد المراجعة.' });
+        wAmt.value = "";
+        wAddr.value = "";
+      }
+    };
+
+    onMounted(async () => {
+      if (isTG) {
+        tg.expand(); // توسيع الواجهة لتملأ الشاشة
+        tg.ready();
+
+        // معالجة رابط الإحالة
+        const startParam = tg.initDataUnsafe?.start_param;
+        await api("login", {
+          ref: startParam ? startParam : null,
+        });
+
+        await loadTicker();
+        tickerTimer = setInterval(loadTicker, 20000); // تحديث كل 20 ثانية لتوفير الطلبات
+      } else {
+        showDialog({ title: "تنبيه", message: "يجب تشغيل هذا التطبيق داخل Telegram" });
+      }
+    });
+
+    onUnmounted(() => {
+      if (tickerTimer) clearInterval(tickerTimer);
+    });
+
+    return {
+      user, net, tx, wAmt, wAddr,
+      depositTRC, depositBEP, tickerItems, loading,
+      handleMine, handleDeposit, handleWithdraw
+    };
+  },
+}).use(vant).mount("#app");
+</script>
+
+<style>
+/* تحسين شكل شريط السحوبات */
+.withdraw-ticker {
+  position: fixed;
+  bottom: 80px;
+  width: 100%;
+  background: rgba(15, 15, 15, 0.95);
+  border-top: 1px solid #ffd70033;
+  overflow: hidden;
+  height: 40px;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+}
+
+.withdraw-track {
+  display: flex;
+  gap: 50px;
+  white-space: nowrap;
+  animation: scrollLeft 30s linear infinite;
+}
+
+.withdraw-item {
+  color: #FFD700;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+}
+
+@keyframes scrollLeft {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+/* تنسيقات إضافية للأزرار أثناء التحميل */
+.btn-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+</style>
+
+<div class="withdraw-ticker" v-if="tickerItems.length">
+  <div class="withdraw-track">
+    <div class="withdraw-item" v-for="(t,i) in tickerItems" :key="i">
+      {{ t.text }}
+    </div>
+    <div class="withdraw-item" v-for="(t,i) in tickerItems" :key="'copy-'+i">
+      {{ t.text }}
+    </div>
+  </div>
+</div>
