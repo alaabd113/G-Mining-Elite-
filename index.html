@@ -2,153 +2,382 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenDrip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TokenDrip Mining</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+
     <style>
-        :root { --primary: #2196F3; --bg: #1E1E1E; --card: rgba(255,255,255,0.05); }
-        body { background: var(--bg); color: #fff; font-family: system-ui; padding: 20px; margin: 0; }
-        .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; text-align: center; backdrop-filter: blur(10px); }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 10px; font-weight: bold; }
-        .btn-main { background: var(--primary); color: white; }
-        .btn-deposit { background: #FF9800; color: white; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1c1c1c;
+            --primary: #00E676; /* لون أخضر رقمي مميز لـ TokenDrip */
+            --primary-dark: #00C853;
+            --text-color: #ffffff;
+            --text-sec: #888888;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding-bottom: 70px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .van-popup, .van-dialog { background: var(--card-bg); color: white; }
+        .van-cell { background: transparent; color: white; }
+        .van-field__label { color: var(--text-sec); }
+        .van-field__control { color: white; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        /* زر التعدين */
+        .mine-circle {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,230,118,0.15) 0%, rgba(0,0,0,0) 70%);
+            border: 3px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 30px auto;
+            box-shadow: 0 0 40px rgba(0, 230, 118, 0.1);
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .mine-circle:active { transform: scale(0.96); border-color: white; }
         
-        /* Modal Styles */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
-        .modal-content { background: #2d2d2d; padding: 20px; border-radius: 16px; width: 90%; max-width: 400px; text-align: right; }
-        .wallet-box { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 0.85rem; word-break: break-all; user-select: text; border: 1px solid #444; }
-        input { width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; margin-top: 5px; box-sizing: border-box;}
+        .balance-box {
+            text-align: center;
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0,230,118,0.3);
+        }
+
+        /* شبكات الدفع */
+        .network-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .net-card {
+            flex: 1;
+            background: #252525;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .net-card.active {
+            border-color: var(--primary);
+            background: rgba(0,230,118,0.1);
+        }
+        .net-icon { width: 30px; height: 30px; margin-bottom: 5px; }
+
+        .btn-main {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            border: none;
+            color: black;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .van-tabbar { background-color: #161616; border-top: 1px solid #333; }
+        .van-tabbar-item--active { background: transparent; color: var(--primary); }
     </style>
 </head>
 <body>
-    <div id="app" style="display:none">
-        <div class="card">
-            <div style="opacity: 0.7">الرصيد الكلي</div>
-            <div style="font-size: 2.2rem; font-weight: bold; margin: 10px 0;">
-                <span id="balance">0.00</span> USDT
-            </div>
-            <button class="btn btn-main" onclick="claim()">🎁 المكافأة اليومية</button>
-            <button class="btn btn-deposit" onclick="openDepositModal()">📥 إيداع رصيد</button>
+    <div id="app" v-cloak>
+        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
+            <van-loading type="vertical" color="#00E676">جارٍ الاتصال...</van-loading>
         </div>
 
-        <div class="card">
-            <div class="stats">
-                <div>المستوى: <span id="lvl">1</span></div>
-                <div>الإحالات: <span id="refs">0</span></div>
-            </div>
-            <div style="margin-top:15px; font-size: 0.9rem">رابط الدعوة:</div>
-            <div id="refLink" class="wallet-box" style="text-align: center;">...</div>
-            <button class="btn" style="background: #4CAF50; color: white" onclick="copyRef()">نسخ الرابط</button>
-        </div>
-    </div>
+        <div v-else>
+            <div v-if="activeTab === 'home'">
+                <div class="card" style="text-align: center;">
+                    <span style="color: var(--text-sec);">إجمالي الرصيد</span>
+                    <div class="balance-box">${{ parseFloat(user.balance).toFixed(4) }}</div>
+                    <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
+                    <span style="margin: 0 10px; color: #555;">|</span>
+                    <span style="color: var(--text-sec);">{{ user.mineCount }}/2 محاولات</span>
+                </div>
 
-    <div id="depositModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">📥 شحن الرصيد</h3>
-            <p style="font-size:0.9rem; color:#aaa">انسخ العنوان وقم بالتحويل، ثم أدخل رقم المعاملة (Hash) بالأسفل.</p>
-            
-            <label>عنوان TRC20 (USDT):</label>
-            <div class="wallet-box" onclick="copyText(this)">TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto</div>
-            
-            <label>عنوان BSC/BEP20 (USDT):</label>
-            <div class="wallet-box" onclick="copyText(this)">0x88bea8db94f9428f282b2cc375ec68ac67fd9200</div>
+                <div class="mine-circle" @click="handleMine">
+                    <i class="ri-hammer-line" style="font-size: 3.5rem; color: var(--primary);"></i>
+                    <h3 style="margin: 5px 0;">TokenDrip</h3>
+                    <span style="font-size: 0.8rem; color: #aaa;">اضغط للتعدين</span>
+                </div>
 
-            <hr style="border-color: #444; margin: 15px 0;">
-            
-            <label>أدخل مبلغ الإيداع:</label>
-            <input type="number" id="depAmount" placeholder="مثلاً: 10">
-            
-            <label style="margin-top:10px; display:block">رقم المعاملة (Transaction Hash):</label>
-            <input type="text" id="depHash" placeholder="لصق الهاش هنا...">
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="btn" style="background:#444; color:#fff; margin:0" onclick="closeDepositModal()">إلغاء</button>
-                <button class="btn btn-main" style="margin:0" onclick="submitDeposit()">✅ تأكيد</button>
+                <div style="padding: 0 15px;">
+                    <h3 style="color: white; margin-bottom: 15px;">خطط الترقية VIP</h3>
+                    <div class="card" v-for="(plan, level) in vipPlans" :key="level" v-if="level > 0"
+                         style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; font-size: 1.1rem; color: var(--primary);">{{ plan.name }}</div>
+                            <div style="font-size: 0.85rem; color: #888;">سعر: ${{ plan.price }} | ربح يومي: ${{ (plan.mineRate * 2).toFixed(2) }}</div>
+                        </div>
+                        <van-button v-if="user.vip >= level" size="small" disabled color="#333">تم</van-button>
+                        <van-button v-else size="small" class="btn-main" @click="buyVip(level)">تفعيل</van-button>
+                    </div>
+                </div>
             </div>
+
+            <div v-if="activeTab === 'wallet'">
+                <div class="card">
+                    <h2 style="text-align: center; margin-bottom: 20px;">المحفظة</h2>
+                    <van-tabs v-model:active="walletTab" background="transparent" color="#00E676" title-active-color="#00E676" title-inactive-color="#888">
+                        
+                        <van-tab title="إيداع">
+                            <div style="padding: 15px 0;">
+                                <p style="font-size: 0.9rem; color: var(--text-sec); margin-bottom: 10px;">اختر الشبكة للإيداع:</p>
+                                
+                                <div class="network-selector">
+                                    <div class="net-card" :class="{active: selectedNet === 'TRC20'}" @click="selectedNet = 'TRC20'">
+                                        <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="net-icon">
+                                        <div>USDT (TRC20)</div>
+                                    </div>
+                                    <div class="net-card" :class="{active: selectedNet === 'BEP20'}" @click="selectedNet = 'BEP20'">
+                                        <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" class="net-icon">
+                                        <div>BSC (BEP20)</div>
+                                    </div>
+                                </div>
+
+                                <div class="card" style="background: #111; text-align: center; word-break: break-all; margin: 10px 0;">
+                                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">عنوان المحفظة ({{ selectedNet }})</div>
+                                    <code style="color: var(--primary); font-size: 0.9rem;">
+                                        {{ selectedNet === 'TRC20' ? TRC20_WALLET : BEP20_WALLET }}
+                                    </code>
+                                    <div style="margin-top: 10px;">
+                                        <van-button size="mini" icon="description" @click="copyAddress">نسخ العنوان</van-button>
+                                    </div>
+                                </div>
+
+                                <van-field v-model="depAmount" label="المبلغ ($)" type="number" placeholder="مثلاً: 20"></van-field>
+                                <van-field v-model="depTxid" label="رقم المعاملة (Hash)" placeholder="ألصق الـ Hash هنا"></van-field>
+                                <van-button block class="btn-main" style="margin-top: 15px;" @click="submitDeposit">تأكيد الإيداع</van-button>
+                            </div>
+                        </van-tab>
+
+                        <van-tab title="سحب">
+                            <div style="padding: 15px 0;">
+                                <p style="font-size: 0.9rem; color: var(--text-sec);">اختر الشبكة التي تريد السحب عليها:</p>
+                                <div class="network-selector">
+                                    <div class="net-card" :class="{active: withdrawNet === 'TRC20'}" @click="withdrawNet = 'TRC20'">
+                                        <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="net-icon">
+                                        <div>TRC20</div>
+                                    </div>
+                                    <div class="net-card" :class="{active: withdrawNet === 'BEP20'}" @click="withdrawNet = 'BEP20'">
+                                        <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" class="net-icon">
+                                        <div>BEP20</div>
+                                    </div>
+                                </div>
+
+                                <van-field v-model="wAmt" label="المبلغ ($)" type="number" placeholder="أقل حد 1$"></van-field>
+                                <van-field v-model="wAddr" label="عنوانك" placeholder="ألصق عنوان محفظتك"></van-field>
+                                <van-button block class="btn-main" style="margin-top: 15px;" @click="withdraw">طلب سحب</van-button>
+                            </div>
+                        </van-tab>
+
+                        <van-tab title="السجل">
+                            <div style="padding-top: 10px;">
+                                <div v-if="user.transactions.length === 0" style="text-align: center; color: #555; padding: 20px;">لا يوجد سجل</div>
+                                <div v-for="tx in user.transactions" :key="tx.id" class="card" style="padding: 12px; margin: 8px 0;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <strong :style="{color: tx.type==='deposit'?'#4CAF50':(tx.type==='withdraw'?'#F44336':'#FFC107')}">
+                                            {{ tx.type.toUpperCase() }}
+                                        </strong>
+                                        <van-tag :type="tx.status==='approved'?'success':(tx.status==='rejected'?'danger':'warning')">
+                                            {{ tx.status }}
+                                        </van-tag>
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: #888; margin-top: 5px;">
+                                        <div>Mablagh: ${{ tx.amount }}</div>
+                                        <div v-if="tx.network">Network: {{ tx.network }}</div>
+                                        <div>{{ new Date(tx.date).toLocaleDateString() }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </van-tab>
+                    </van-tabs>
+                </div>
+            </div>
+
+            <div v-if="activeTab === 'team'">
+                <div class="card" style="text-align: center; padding: 30px 20px;">
+                    <i class="ri-group-line" style="font-size: 4rem; color: var(--primary);"></i>
+                    <h2>نظام الإحالة</h2>
+                    <p style="color: #aaa;">ادعُ أصدقاءك واكسب نسب مئوية من ترقياتهم!</p>
+                    
+                    <div style="display: flex; justify-content: space-around; background: #111; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                        <div>
+                            <div style="font-size: 1.5rem; color: white;">{{ user.referrals }}</div>
+                            <div style="font-size: 0.8rem; color: #666;">الأصدقاء</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; color: white;">{{ vipPlans[user.vip].refBonus * 100 }}%</div>
+                            <div style="font-size: 0.8rem; color: #666;">العمولة</div>
+                        </div>
+                    </div>
+                    
+                    <van-button block class="btn-main" @click="copyLink">نسخ رابط الدعوة</van-button>
+                </div>
+            </div>
+
+            <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666">
+                <van-tabbar-item name="home" icon="home-smile-line">الرئيسية</van-tabbar-item>
+                <van-tabbar-item name="wallet" icon="wallet-3-line">المحفظة</van-tabbar-item>
+                <van-tabbar-item name="team" icon="team-line">الفريق</van-tabbar-item>
+            </van-tabbar>
         </div>
     </div>
 
     <script>
-        const SERVER = 'https://steep-resonance-6443.alaabdalaziz01.workers.dev';
-        let user;
-
-        // تهيئة التطبيق
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-
-        async function api(action, payload = {}) {
-            const res = await fetch(SERVER, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    action,
-                    initData: window.Telegram.WebApp.initData,
-                    payload
-                })
-            });
-            return await res.json();
-        }
-
-        async function init() {
-            const params = new URLSearchParams(window.location.search);
-            const data = await api('init', { refCode: params.get('startapp') });
-            if(data.ok) {
-                user = data.user;
-                updateUI();
-                document.getElementById('app').style.display = 'block';
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('balance').innerText = user.balance.toFixed(2);
-            document.getElementById('lvl').innerText = user.level;
-            document.getElementById('refs').innerText = user.referrals;
-            document.getElementById('refLink').innerText = `https://t.me/TokenDrip_bot/app?startapp=${user.id}`;
-        }
-
-        async function claim() {
-            const data = await api('claim_daily');
-            if(data.ok) {
-                user = data.user;
-                updateUI();
-                window.Telegram.WebApp.showAlert('تم استلام المكافأة!');
-            } else {
-                window.Telegram.WebApp.showAlert(data.error);
-            }
-        }
-
-        // وظائف الإيداع
-        function openDepositModal() { document.getElementById('depositModal').style.display = 'flex'; }
-        function closeDepositModal() { document.getElementById('depositModal').style.display = 'none'; }
+        const { createApp, ref, onMounted } = Vue;
         
-        async function submitDeposit() {
-            const amount = document.getElementById('depAmount').value;
-            const txHash = document.getElementById('depHash').value;
-            
-            if(!amount || !txHash) return window.Telegram.WebApp.showAlert('يرجى ملء جميع الحقول');
-            
-            const data = await api('submit_deposit', { amount, txHash, method: 'USDT' });
-            
-            if(data.ok) {
-                closeDepositModal();
-                window.Telegram.WebApp.showAlert('تم إرسال الطلب! سيتم مراجعته من قبل الإدارة.');
-            } else {
-                window.Telegram.WebApp.showAlert(data.error);
+        // ⚠️ إعدادات السيرفر والعناوين
+        const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+        const BOT_USERNAME = "TokenDrip_bot";
+        
+        // العناوين التي أرسلتها
+        const WALLETS = {
+            TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto",
+            BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200"
+        };
+
+        createApp({
+            setup() {
+                const loading = ref(true);
+                const activeTab = ref('home');
+                const walletTab = ref(0);
+                const selectedNet = ref('TRC20'); // الشبكة الافتراضية للإيداع
+                const withdrawNet = ref('TRC20'); // الشبكة الافتراضية للسحب
+                
+                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, transactions: [] });
+                const depAmount = ref('');
+                const depTxid = ref('');
+                const wAmt = ref('');
+                const wAddr = ref('');
+
+                const vipPlans = {
+                    0: { name: "FREE", price: 0, dailyLimit: 0, mineRate: 0 },
+                    1: { name: "BASIC", price: 1, dailyLimit: 2, mineRate: 0.25, refBonus: 0.15 },
+                    2: { name: "PRO", price: 5, dailyLimit: 2, mineRate: 0.80, refBonus: 0.50 },
+                    3: { name: "ELITE", price: 10, dailyLimit: 2, mineRate: 2.00, refBonus: 1.00 }
+                };
+
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+
+                const api = async (action, payload = {}) => {
+                    try {
+                        const res = await fetch(SERVER, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ initData: tg.initData, action, payload })
+                        });
+                        return await res.json();
+                    } catch (e) { return { ok: false, error: "Connection Error" }; }
+                };
+
+                const refresh = async () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const refId = urlParams.get('startapp') || null;
+                    const data = await api("login", { ref: refId });
+                    if (data.ok) {
+                        user.value = data.user;
+                        loading.value = false;
+                    }
+                };
+
+                const handleMine = async () => {
+                    if (user.value.vip === 0) return vant.showToast('اشترك في VIP أولاً');
+                    const data = await api("mine");
+                    if (data.ok) {
+                        user.value = data.user;
+                        vant.showSuccessToast('تم التعدين بنجاح!');
+                    } else vant.showFailToast(data.error);
+                };
+
+                const submitDeposit = async () => {
+                    if (!depAmount.value || !depTxid.value) return vant.showToast('املأ الحقول');
+                    const data = await api("deposit", { 
+                        amount: depAmount.value, 
+                        txid: depTxid.value,
+                        network: selectedNet.value // إرسال نوع الشبكة
+                    });
+                    if (data.ok) {
+                        vant.showSuccessToast('جاري المراجعة');
+                        depAmount.value = ''; depTxid.value = '';
+                        walletTab.value = 2; // الذهاب للسجل
+                        refresh();
+                    }
+                };
+
+                const withdraw = async () => {
+                    if (!wAmt.value || !wAddr.value) return vant.showToast('املأ الحقول');
+                    const data = await api("withdraw", { 
+                        amount: Number(wAmt.value), 
+                        wallet: wAddr.value,
+                        network: withdrawNet.value // إرسال نوع الشبكة المختارة
+                    });
+                    if (data.ok) {
+                        vant.showSuccessToast('تم طلب السحب');
+                        user.value = data.user;
+                        walletTab.value = 2;
+                    } else vant.showFailToast(data.error);
+                };
+
+                const buyVip = (tier) => {
+                    vant.showConfirmDialog({ title: 'تأكيد', message: `شراء ${vipPlans[tier].name}؟` })
+                        .then(async () => {
+                            const data = await api("buy_vip", { tier });
+                            if (data.ok) { user.value = data.user; vant.showSuccessToast('مبروك!'); }
+                            else vant.showFailToast(data.error);
+                        }).catch(() => {});
+                };
+
+                const copyAddress = () => {
+                    const addr = selectedNet.value === 'TRC20' ? WALLETS.TRC20 : WALLETS.BEP20;
+                    navigator.clipboard.writeText(addr);
+                    vant.showToast('تم النسخ');
+                };
+
+                const copyLink = () => {
+                    const link = `https://t.me/${BOT_USERNAME}?startapp=${user.value.id}`;
+                    navigator.clipboard.writeText(link);
+                    vant.showToast('تم نسخ الرابط');
+                };
+
+                onMounted(refresh);
+
+                return {
+                    loading, activeTab, walletTab, user, vipPlans,
+                    selectedNet, withdrawNet, TRC20_WALLET: WALLETS.TRC20, BEP20_WALLET: WALLETS.BEP20,
+                    depAmount, depTxid, wAmt, wAddr,
+                    handleMine, submitDeposit, withdraw, buyVip, copyAddress, copyLink
+                };
             }
-        }
-
-        function copyText(el) {
-            navigator.clipboard.writeText(el.innerText);
-            window.Telegram.WebApp.showAlert('تم نسخ العنوان');
-        }
-
-        function copyRef() {
-            navigator.clipboard.writeText(document.getElementById('refLink').innerText);
-            window.Telegram.WebApp.showAlert('تم نسخ رابط الدعوة');
-        }
-
-        init();
+        }).use(vant).mount("#app");
     </script>
 </body>
 </html>
