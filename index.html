@@ -1,103 +1,153 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Elite Mining</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
-  <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
-  <style>
-    [v-cloak] { display: none; }
-    body { background: #0a0a0a; color: #fff; }
-    .card { background: #1a1a1a; padding: 20px; border-radius: 15px; margin: 15px; border: 1px solid #ffd70033; text-align: center; }
-    .mine-btn { width: 130px; height: 130px; border-radius: 50%; background: #ffd700; color: #000; font-weight: bold; margin: 20px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px #ffd70044; transition: 0.1s; cursor: pointer; }
-    .ticker { position: fixed; bottom: 0; width: 100%; background: #000; height: 35px; overflow: hidden; display: flex; align-items: center; border-top: 1px solid #333; }
-    .track { display: flex; gap: 40px; animation: slide 20s linear infinite; white-space: nowrap; }
-    @keyframes slide { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenDrip</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#ffffff;
+  --primary:#00bcd4;
+}
+*{box-sizing:border-box;font-family:system-ui}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.container{max-width:600px;margin:auto;padding:16px}
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+button{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:var(--primary);
+  color:#000;
+  font-size:1rem;
+}
+.small{font-size:.9rem;word-break:break-all}
+.stat{margin-top:6px;font-size:1.05rem}
+.progress{
+  height:10px;
+  background:#333;
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:8px;
+}
+.bar{
+  height:100%;
+  background:var(--primary);
+}
+</style>
 </head>
+
 <body>
-  <div id="app" v-cloak>
-    <div class="card">
-      <div style="font-size: 12px; color: #aaa;">الرصيد المتوفر</div>
-      <div style="font-size: 28px; color: #ffd700; font-weight: bold;">${{ user.balance }}</div>
-      <div style="font-size: 11px; margin-top: 5px;">VIP: {{ user.vip }} | referrals: {{ user.referrals }}</div>
-    </div>
+<div class="container">
 
-    <div class="mine-btn" @click="mine">START ⛏️</div>
+  <div class="card">
+    <h3>💰 رصيدك</h3>
+    <div id="balance">0.0000 $</div>
+  </div>
 
-    <van-tabs background="transparent" color="#ffd700" title-active-color="#ffd700">
-      <van-tab title="الخطط ⭐">
-        <div style="padding: 10px;">
-          <div v-for="(p, tier) in vipPlans" :key="tier" style="background: #222; margin: 5px; padding: 10px; border-radius: 8px;">
-            <div style="color: #ffd700;">{{ p.name }} - {{ p.price }}$</div>
-            <div style="font-size: 11px; color: #888;">ربح: +{{ p.mineRate }}$ | إحالة: +{{ p.refBonus }}$</div>
-            <van-button size="mini" type="warning" @click="buyVip(tier)" :disabled="user.vip >= tier">شراء</van-button>
-          </div>
-        </div>
-      </van-tab>
-      <van-tab title="إيداع 📥">
-        <div style="padding: 15px; font-size: 11px; text-align: right;">
-          USDT (TRC20): <br><code>TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto</code><br>
-          USDT (BEP20): <br><code>0x88bea8db94f9428f282b2cc375ec68ac67fd9200</code>
-          <van-field v-model="txid" placeholder="أدخل الهاش (TXID) للمراجعة"></van-field>
-          <van-button block type="primary" size="small" @click="deposit">تأكيد الإرسال</van-button>
-        </div>
-      </van-tab>
-      <van-tab title="سحب 📤">
-        <div style="padding: 15px;">
-          <van-field v-model="wAmt" type="number" placeholder="المبلغ (دني 1$)"></van-field>
-          <van-field v-model="wAddr" placeholder="عنوان المحفظة"></van-field>
-          <van-button block type="success" size="small" @click="withdraw">طلب سحب</van-button>
-        </div>
-      </van-tab>
-    </van-tabs>
-
-    <div class="ticker" v-if="logs.length">
-      <div class="track">
-        <span v-for="l in logs" style="color: #ffd700; font-size: 11px;">⭐ VIP {{ l.vip }} • User***{{ String(l.userId).slice(-3) }} سحب {{ l.amount }}$ ✅</span>
-      </div>
+  <div class="card">
+    <h3>⭐ مستواك</h3>
+    <div class="stat">Level: <b id="level">1</b></div>
+    <div class="stat">XP: <b id="xp">0</b></div>
+    <div class="progress">
+      <div id="xpBar" class="bar"></div>
     </div>
   </div>
 
-  <script>
-    const { createApp, ref, onMounted } = Vue;
-    const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev"; // رابط الوركر
-    createApp({
-      setup() {
-        const user = ref({ balance: 0, vip: 0, referrals: 0 }), logs = ref([]), txid = ref(''), wAmt = ref(''), wAddr = ref('');
-        const vipPlans = { 1:{name:"BASIC", price:1, mineRate:0.02, refBonus:0.10}, 2:{name:"PRO", price:5, mineRate:0.08, refBonus:0.25}, 3:{name:"ELITE", price:10, mineRate:0.15, refBonus:0.50} };
-        const tg = window.Telegram.WebApp;
-        const api = async (action, payload = {}) => {
-          const res = await fetch(SERVER, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ initData:tg.initData, action, payload }) });
-          return await res.json();
-        };
-        const mine = async () => {
-          if(user.value.vip === 0) return vant.showToast("VIP Required");
-          const d = await api("mine");
-          if(d.ok) { user.value = d.user; vant.showToast("+"+vipPlans[user.value.vip].mineRate); }
-        };
-        const buyVip = async (t) => {
-          const d = await api("buy_vip", {tier:t});
-          if(d.ok) { user.value = d.user; vant.showToast("Upgraded!"); } else vant.showToast(d.error);
-        };
-        const deposit = async () => { await api("deposit", {txid:txid.value}); vant.showToast("Reviewing..."); txid.value=""; };
-        const withdraw = async () => {
-          const d = await api("withdraw", {amount:Number(wAmt.value), wallet:wAddr.value});
-          if(d.ok) { user.value = d.user; vant.showToast("Pending Review"); } else vant.showToast(d.error);
-        };
-        onMounted(async () => {
-          tg.expand();
-          const d = await api("login", {ref:tg.initDataUnsafe?.start_param});
-          if(d.ok) user.value = d.user;
-          const t = await api("get_ticker");
-          if(t.ok) logs.value = t.items;
-        });
-        return { user, logs, txid, wAmt, wAddr, vipPlans, mine, buyVip, deposit, withdraw };
-      }
-    }).use(vant).mount("#app");
-  </script>
+  <div class="card">
+    <h3>🤝 الإحالات</h3>
+    <div class="stat">عدد الإحالات: <b id="refCount">0</b></div>
+    <div class="stat">تمت دعوتك بواسطة: <b id="invitedBy">—</b></div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 رابط الإحالة</h3>
+    <div id="refLink" class="small"></div>
+    <button onclick="copyRef()">نسخ الرابط</button>
+  </div>
+
+</div>
+
+<script>
+const tg = Telegram.WebApp;
+tg.ready(); tg.expand();
+
+const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+const BOT_USERNAME = "TokenDrip_bot";
+
+let USER = null;
+
+async function api(action, payload = {}) {
+  const r = await fetch(SERVER, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      initData: tg.initData,
+      action,
+      payload
+    })
+  });
+  return r.json();
+}
+
+async function load() {
+  const ref = tg.initDataUnsafe?.start_param || null;
+  const d = await api("login", { ref });
+  USER = d.user;
+  render();
+}
+
+function render() {
+  document.getElementById("balance").innerText =
+    USER.balance.toFixed(4) + " $";
+
+  document.getElementById("refCount").innerText =
+    USER.refCount || 0;
+
+  document.getElementById("invitedBy").innerText =
+    USER.invitedBy ? USER.invitedBy : "—";
+
+  document.getElementById("level").innerText = USER.level;
+  document.getElementById("xp").innerText = USER.xp || 0;
+
+  const nextXp = USER.level < 10
+    ? [0,10,25,45,70,100,140,190,250,320][USER.level] 
+    : USER.xp;
+
+  const percent = nextXp
+    ? Math.min((USER.xp / nextXp) * 100, 100)
+    : 100;
+
+  document.getElementById("xpBar").style.width = percent + "%";
+
+  const link = `https://t.me/${BOT_USERNAME}?start=${USER.id}`;
+  document.getElementById("refLink").innerText = link;
+}
+
+function copyRef() {
+  navigator.clipboard.writeText(
+    document.getElementById("refLink").innerText
+  );
+  alert("تم نسخ رابط الإحالة");
+}
+
+load();
+</script>
 </body>
 </html>
