@@ -41,8 +41,11 @@
         .harvest-circle:active { transform: scale(0.95); }
         .harvest-circle.disabled { 
             border-color: #444; background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%);
-            filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; pointer-events: none; 
+            filter: grayscale(100%); opacity: 0.8; cursor: not-allowed; pointer-events: none; 
         }
+        
+        /* تنسيق العداد */
+        .timer-display { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #888; letter-spacing: 2px; margin: 5px 0; }
         
         .van-popup, .van-dialog, .van-toast { background: var(--card-bg) !important; color: white !important; }
         .van-cell { background: transparent; color: white; padding: 10px 0; }
@@ -79,21 +82,13 @@
             <van-button size="small" type="primary" @click="refreshPage">تحديث الصفحة</van-button>
         </div>
 
-        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }">
-            <i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span>
-        </div>
-
-        <div class="top-icons">
-            <div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? '🇬🇧' : '🇸🇦' }}</div>
-        </div>
+        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }"><i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span></div>
+        <div class="top-icons"><div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? '🇬🇧' : '🇸🇦' }}</div></div>
         <div class="float-support" @click="showSupport = true"><i class="ri-customer-service-2-fill"></i></div>
 
-        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-             <van-loading color="#00E676" vertical>جاري التحميل...</van-loading>
-        </div>
-
+        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;"><van-loading color="#00E676" vertical>جاري التحميل...</van-loading></div>
+        
         <div v-else style="padding-top: 30px;">
-            
             <div v-if="activeTab === 'home'">
                 <div class="card" style="text-align: center; margin-top: 20px;">
                     <span style="color: var(--text-sec); font-size: 0.9rem;">{{ t[lang].balance }}</span>
@@ -101,10 +96,17 @@
                     <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
                 </div>
 
-                <div class="harvest-circle" :class="{ disabled: user.vip === 0 || user.mineCount >= vipPlans[user.vip].dailyLimit }" @click="handleCollect">
-                    <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
-                    <h3 style="margin: 5px 0; color: white;">{{ t[lang].doTask }}</h3>
-                    <span style="font-size: 0.85rem; color: #aaa;">{{ getStatusText() }}</span>
+                <div class="harvest-circle" :class="{ disabled: user.vip === 0 || timeLeft !== '' }" @click="handleCollect">
+                    <div v-if="timeLeft === ''">
+                        <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
+                        <h3 style="margin: 5px 0; color: white;">{{ t[lang].doTask }}</h3>
+                        <span style="font-size: 0.85rem; color: #aaa;">{{ getStatusText() }}</span>
+                    </div>
+                    <div v-else>
+                        <i class="ri-time-line" style="font-size: 3rem; color: #666;"></i>
+                        <div class="timer-display">{{ timeLeft }}</div>
+                        <span style="font-size: 0.75rem; color: #666;">Next Reset</span>
+                    </div>
                 </div>
                 
                 <div style="text-align: center; font-size: 0.75rem; color: #666; margin-top: -15px; margin-bottom: 20px;">
@@ -119,19 +121,14 @@
                 <div class="vip-scroll-container">
                     <div v-for="(plan, level) in vipPlans" :key="level" v-show="level > 0" class="vip-card" :class="{ 'active-plan': user.vip === Number(level) }">
                         <div style="position:absolute; top:10px; right:10px; font-size:1.5rem; opacity:0.2; font-weight:800; color:white;">{{ level }}</div>
-                        <div style="text-align: center;">
-                            <h3 style="margin: 5px 0; color:white;">{{ plan.name }}</h3>
-                            <div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div>
-                        </div>
+                        <div style="text-align: center;"><h3 style="margin: 5px 0; color:white;">{{ plan.name }}</h3><div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div></div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
                             <div>{{ t[lang].daily }}: <span style="color:white">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
                             <div style="margin-top:5px; color:#888;">Max Withdraw: ${{ plan.maxDailyWithdraw }}</div>
                         </div>
                         <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
-                        
                         <button v-else class="btn-main" :disabled="vipLoading === Number(level)" @click="buyVip(Number(level))">
-                            <span v-if="vipLoading === Number(level)">...</span>
-                            <span v-else>{{ t[lang].upgrade }}</span>
+                            <span v-if="vipLoading === Number(level)">...</span><span v-else>{{ t[lang].upgrade }}</span>
                         </button>
                     </div>
                 </div>
@@ -172,12 +169,9 @@
                                             <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
                                         </van-radio-group>
                                     </div>
-
-                                    <div style="background:rgba(0,230,118,0.1); color:var(--primary); padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.8rem; text-align:center;">
-                                        Limit: ${{ vipPlans[user.vip].maxDailyWithdraw || 0 }} / Day
-                                    </div>
+                                    <div style="background:rgba(0,230,118,0.1); color:var(--primary); padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.8rem; text-align:center;">Limit: ${{ vipPlans[user.vip].maxDailyWithdraw || 0 }} / Day</div>
                                     <van-field v-model="wAmt" :label="t[lang].amount" type="number" placeholder="Min 1$"></van-field>
-                                    <van-field v-model="wAddr" :label="t[lang].addr" placeholder="USDT TRC20/BEP20"></van-field>
+                                    <van-field v-model="wAddr" :label="t[lang].addr" placeholder="USDT Address"></van-field>
                                     <van-field v-model="wPin" :label="t[lang].pin" type="password" maxlength="4" placeholder="****"></van-field>
                                     <button class="btn-main" style="margin-top:20px" @click="withdraw">{{ t[lang].reqWithdraw }}</button>
                                 </div>
@@ -195,7 +189,6 @@
                     </div>
                     <button class="btn-main" @click="copyLink">{{ t[lang].copyLink }}</button>
                 </div>
-                
                 <div class="card">
                     <h3 style="margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">{{ t[lang].team }}</h3>
                     <div v-if="refLogs.length > 0">
@@ -204,16 +197,11 @@
                             <div style="flex:1"><div style="font-weight:bold; color:white;">New Member</div><div style="font-size:0.85rem; color:#aaa;">Plan <span style="color:var(--primary)">{{ log.plan }}</span></div></div>
                         </div>
                     </div>
-                    <div v-else style="text-align:center; padding:20px; color:#666;">
-                        <i class="ri-folder-open-line" style="font-size:2rem; opacity:0.5; margin-bottom:10px; display:block"></i>
-                        <p>{{ lang === 'ar' ? 'لا يوجد نشاط للفريق حالياً' : 'No team activity yet' }}</p>
-                    </div>
+                    <div v-else style="text-align:center; padding:20px; color:#666;"><i class="ri-folder-open-line" style="font-size:2rem; opacity:0.5; margin-bottom:10px; display:block"></i><p>{{ lang === 'ar' ? 'لا يوجد نشاط للفريق حالياً' : 'No team activity yet' }}</p></div>
                 </div>
             </div>
 
-            <div class="footer-note">
-                Note: Rewards distributed are part of an internal marketing system.<br>This is not an on-chain mining contract.
-            </div>
+            <div class="footer-note">Note: Rewards distributed are part of an internal marketing system.<br>This is not an on-chain mining contract.</div>
 
             <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666" style="border-top: 1px solid #222;">
                 <van-tabbar-item name="home" icon="flashlight-fill">{{ t[lang].home }}</van-tabbar-item>
@@ -231,7 +219,6 @@
 
     <script>
         const { createApp, ref, onMounted, watch } = Vue;
-        // ⚠️ تأكد أن هذه البيانات مطابقة لما في Worker.js
         const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", BOT_USERNAME: "TokenDrip_bot", GROUP_URL: "https://t.me/TokenDripCommunity" };
         const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto", BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200" };
         const vipPlans = { 0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0}, 1:{name:"Starter",price:2,dailyLimit:1,mineRate:0.15,maxDailyWithdraw:2}, 2:{name:"Bronze",price:5,dailyLimit:2,mineRate:0.175,maxDailyWithdraw:5}, 3:{name:"Silver",price:10,dailyLimit:3,mineRate:0.21,maxDailyWithdraw:10}, 4:{name:"Gold",price:15,dailyLimit:4,mineRate:0.225,maxDailyWithdraw:15}, 5:{name:"Platinum",price:20,dailyLimit:5,mineRate:0.22,maxDailyWithdraw:20}, 6:{name:"Diamond",price:50,dailyLimit:6,mineRate:0.41,maxDailyWithdraw:50} };
@@ -253,69 +240,94 @@
                 const fakeWithdraw = ref({ show: false, text: "", active: false });
                 const showSupport = ref(false); const supportMsg = ref(''); const serverError = ref(false);
                 const refLogs = ref([]);
-                
-                // ✅ تعريف المتغير vipLoading (إصلاح الخطأ)
                 const vipLoading = ref(null);
-                
+                const timeLeft = ref('');
+                let timerInterval = null;
                 const tg = window.Telegram.WebApp; tg.expand();
 
                 const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { serverError.value = true; return { ok: false, error: "Connection Error" }; } };
                 const refreshPage = () => window.location.reload();
                 
-                const refresh = async () => { const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); if (data.ok) { user.value = data.user; inGroup.value = data.inGroup; loading.value = false; if(user.value.vip>0) startFakeBar(); fetchLogs(); } };
+                // ✅ وظيفة العداد التنازلي
+                const startTimer = () => {
+                    if(timerInterval) clearInterval(timerInterval);
+                    const updateTimer = () => {
+                        const now = new Date();
+                        const tomorrow = new Date(now);
+                        // نضبط التوقيت لنهاية اليوم الحالي (منتصف الليل UTC)
+                        tomorrow.setUTCHours(24, 0, 0, 0); 
+                        const diff = tomorrow - now;
+
+                        if (diff <= 0) {
+                            timeLeft.value = '';
+                            clearInterval(timerInterval);
+                            refresh(); // تحديث البيانات عند انتهاء الوقت
+                        } else {
+                            const h = Math.floor(diff / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            const s = Math.floor((diff % 60000) / 1000);
+                            timeLeft.value = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                        }
+                    };
+                    updateTimer(); // تشغيل فوري
+                    timerInterval = setInterval(updateTimer, 1000);
+                };
+
+                const refresh = async () => { 
+                    const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); 
+                    if (data.ok) { 
+                        user.value = data.user; 
+                        inGroup.value = data.inGroup; 
+                        loading.value = false; 
+                        if(user.value.vip > 0) startFakeBar(); 
+                        fetchLogs(); 
+                        
+                        // تشغيل العداد إذا انتهت المهام
+                        if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) {
+                            startTimer();
+                        } else {
+                            timeLeft.value = ''; // إعادة تعيين
+                        }
+                    } 
+                };
+                
                 const fetchLogs = async () => { const data = await api("get_logs"); if (data.ok) { refLogs.value = data.refLogs; } };
 
                 const handleCollect = async () => { 
+                    if(timeLeft.value !== '') return; // منع الضغط إذا العداد يعمل
                     const data = await api("mine"); 
                     if (data.ok) { 
                         user.value = data.user; 
-                        // ✅ رسالة مخصصة
                         vant.showSuccessToast(lang.value === 'ar' ? '+ تم إضافة الربح' : '+ Profit Added'); 
                         startFakeBar(); 
+                        // بدء العداد فوراً بعد الجمع
+                        if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer();
                     } else vant.showNotify({ type: 'warning', message: data.error }); 
                 };
                 
                 const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set ✅'); } };
                 
-                // ✅ وظيفة السحب المحسنة (Validation + Dialog + Network)
                 const withdraw = async () => {
-                    if (!wAddr.value || wAddr.value.length < 20) {
-                        return vant.showToast(lang.value === 'ar' ? '⚠️ عنوان المحفظة قصير جداً أو غير صحيح' : '⚠️ Wallet address too short or invalid');
-                    }
-                    
-                    // ✅ تم ربط الشبكة
+                    if (!wAddr.value || wAddr.value.length < 20) return vant.showToast(lang.value === 'ar' ? '⚠️ عنوان المحفظة قصير' : '⚠️ Address too short');
                     const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
-                    
-                    if (data.ok) { 
-                        user.value = data.user; 
-                        vant.showSuccessToast('Request Sent'); 
-                        wAmt.value=''; wPin.value=''; 
-                    } else {
+                    if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
+                    else {
                         const err = data.error || "Error";
-                        // رسائل خطأ ذكية
-                        if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System")) {
-                            vant.showDialog({ title: '⚠️ Note', message: err });
-                        } else {
-                            vant.showNotify({ type: 'danger', message: err });
-                        }
+                        if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System")) vant.showDialog({ title: '⚠️ Note', message: err });
+                        else vant.showNotify({ type: 'danger', message: err });
                     }
                 };
 
                 const sendSupport = async () => { if(!supportMsg.value) return; await api("support", { msg: supportMsg.value }); showSupport.value = false; supportMsg.value = ''; vant.showSuccessToast('Message Sent'); };
                 const submitDeposit = async () => { const d = await api("deposit", { amount: depAmount.value, txid: depTxid.value, network: depositNetwork.value }); if(d.ok) { vant.showSuccessToast('Reviewing...'); depAmount.value=''; depTxid.value=''; } };
                 
-                // ✅ زر الترقية المحسن (Confirmation Dialog)
                 const buyVip = (t) => {
                     const plan = vipPlans[t];
-                    const msg = lang.value === 'ar' 
-                        ? `هل أنت متأكد من تفعيل ${plan.name} بسعر ${plan.price}$؟` 
-                        : `Confirm upgrade to ${plan.name} for $${plan.price}?`;
-                        
+                    const msg = lang.value === 'ar' ? `هل أنت متأكد من تفعيل ${plan.name} بسعر ${plan.price}$؟` : `Confirm upgrade to ${plan.name} for $${plan.price}?`;
                     vant.showConfirmDialog({ title: 'Upgrade', message: msg }).then(async () => {
                         vipLoading.value = t;
                         const d = await api("buy_vip", { tier: t });
-                        if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } 
-                        else vant.showFailToast(d.error);
+                        if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } else vant.showFailToast(d.error);
                         vipLoading.value = null;
                     }).catch(() => {});
                 };
@@ -326,20 +338,13 @@
                 const formatDate = (ts) => new Date(ts).toLocaleDateString();
                 const getStatusText = () => user.value.vip===0 ? (lang.value==='ar'?'غير نشط':'Inactive') : (user.value.mineCount>=vipPlans[user.value.vip].dailyLimit ? 'Done ✅' : 'Start');
                 
-                // ✅ شريط السحب الوهمي (نصوص واقعية)
                 const startFakeBar = () => {
                     if(fakeWithdraw.value.active) return; fakeWithdraw.value.active = true;
                     const names = ["Ali", "Saad", "User99", "Ahmed", "Moha", "Sara", "Crypto", "Miner"];
                     const run = () => {
                         const amt = (Math.random() * 14 + 1).toFixed(2);
                         const name = names[Math.floor(Math.random()*names.length)];
-                        
-                        if (lang.value === 'ar') {
-                            fakeWithdraw.value.text = `✅ تم سحب ${amt}$ بنجاح بواسطة ${name}***`;
-                        } else {
-                            fakeWithdraw.value.text = `✅ ${name}*** successfully withdrew $${amt}`;
-                        }
-                        
+                        fakeWithdraw.value.text = lang.value === 'ar' ? `✅ تم سحب ${amt}$ بنجاح بواسطة ${name}***` : `✅ ${name}*** successfully withdrew $${amt}`;
                         fakeWithdraw.value.show = true;
                         setTimeout(() => { fakeWithdraw.value.show = false; }, 4000);
                         setTimeout(run, Math.random() * 5000 + 5000);
@@ -347,7 +352,7 @@
                 };
 
                 onMounted(refresh);
-                return { loading, activeTab, walletTab, user, inGroup, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, fakeWithdraw, showSupport, supportMsg, lang, t, CONFIG, WALLETS, refLogs, serverError, refreshPage, toggleLang, handleCollect, setupPin, withdraw, sendSupport, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, getStatusText, formatDate, depositNetwork, vipLoading };
+                return { loading, activeTab, walletTab, user, inGroup, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, fakeWithdraw, showSupport, supportMsg, lang, t, CONFIG, WALLETS, refLogs, serverError, refreshPage, toggleLang, handleCollect, setupPin, withdraw, sendSupport, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, getStatusText, formatDate, depositNetwork, vipLoading, timeLeft };
             }
         }).use(vant).mount("#app");
     </script>
