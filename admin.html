@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenDrip Admin</title>
+    <title>TokenDrip Admin Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -12,7 +12,10 @@
             --card-bg: #1c1c1c;
             --primary: #00E676;
             --danger: #f44336;
+            --warning: #FFC107;
             --text-color: #ffffff;
+            --input-bg: #252525;
+            --border: #333;
         }
 
         body {
@@ -21,41 +24,52 @@
             font-family: 'Cairo', sans-serif;
             margin: 0;
             padding: 20px;
+            padding-bottom: 80px; /* مساحة للإشعار */
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; font-size: 1.5rem; }
 
         .card {
             background: var(--card-bg);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            border: 1px solid #333;
+            border: 1px solid var(--border);
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; }
+        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
         
-        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem; margin-top: 10px;}
+        
+        /* Input Group لتحسين زر النسخ */
+        .input-group { display: flex; gap: 5px; }
+        .input-group input { border-radius: 8px 0 0 8px; margin-bottom: 5px; }
+        .input-group button { 
+            width: 50px; flex: none; border-radius: 0 8px 8px 0; 
+            margin-bottom: 5px; padding: 0; display: flex; 
+            align-items: center; justify-content: center; font-size: 1.2rem;
+            background: #333; color: white;
+        }
         
         input, select {
             width: 100%;
             padding: 12px;
-            background: #252525;
+            background: var(--input-bg);
             border: 1px solid #444;
             border-radius: 8px;
             color: white;
             font-family: inherit;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            margin-bottom: 5px;
             box-sizing: border-box;
+            transition: 0.3s;
         }
 
         input:focus { border-color: var(--primary); outline: none; }
 
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 15px;}
 
         button {
             flex: 1;
@@ -66,41 +80,110 @@
             cursor: pointer;
             font-family: inherit;
             transition: 0.2s;
+            font-size: 1rem;
+        }
+
+        /* تأثير التعطيل */
+        button:disabled, input:disabled, select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
         }
 
         .btn-approve { background: var(--primary); color: #000; }
         .btn-reject { background: var(--danger); color: white; }
-        .btn-blue { background: #2196F3; color: white; }
-
-        button:active { transform: scale(0.95); opacity: 0.9; }
+        .btn-blue { background: #2196F3; color: white; width: 100%; margin-top: 15px;}
+        .btn-search { background: #FF9800; color: black; margin-top: 10px; width: 100%; }
 
         .note {
-            font-size: 0.8rem;
-            color: #666;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
+            font-size: 0.8rem; color: #888; background: rgba(255,255,255,0.05);
+            padding: 10px; border-radius: 6px; margin-bottom: 15px; line-height: 1.4;
+        }
+
+        .checkbox-container {
+            display: flex; align-items: center; margin-top: 15px; font-size: 0.9rem;
+            background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 6px;
+        }
+        .checkbox-container input { width: auto; margin: 0 0 0 10px; cursor: pointer; }
+
+        /* Loader Overlay */
+        #loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #333;
+            border-top: 5px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; mb-3;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification (رسائل ملونة) */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+        #toast.success { background-color: var(--primary); color: black; }
+        #toast.error { background-color: var(--danger); }
+        #toast.warning { background-color: var(--warning); color: black; }
+        
+        #searchResult {
+            margin-top: 10px; padding: 10px; background: #2a2a2a; 
+            border-radius: 6px; border: 1px dashed #555; display: none;
         }
     </style>
 </head>
 <body>
+    <div id="loader-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px;">جاري الاتصال...</p>
+    </div>
+
+    <div id="toast">تمت العملية!</div>
+
     <div class="header">
-        <h1>🛡️ لوحة التحكم</h1>
-        <p style="color: #666;">إدارة السحوبات والإيداعات</p>
+        <h1>🛡️ لوحة التحكم Pro</h1>
+        <p style="color: #666;">إصدار متقدم مع تحسينات UX</p>
     </div>
 
     <div class="card">
-        <h3>⚡ معالجة طلب (سحب/إيداع)</h3>
+        <h3>🔍 استعلام عن مستخدم</h3>
+        <input type="number" id="searchId" class="user-id-input" placeholder="User ID">
+        <button class="btn-search" onclick="fetchUserInfo()">بحث</button>
+        <div id="searchResult"></div>
+    </div>
+
+    <div class="card">
+        <h3>⚡ معالجة الطلبات</h3>
         <div class="note">
-            يصلك إشعار على البوت يحتوي على: User ID و TX_REF. انسخهم هنا.
+            تم تحسين النسخ: اضغط على الزر بجانب الحقل لنسخ أو لصق البيانات.
         </div>
 
         <label>معرف المستخدم (User ID)</label>
-        <input type="text" id="targetId" placeholder="مثلاً: 123456789">
+        <input type="number" id="targetId" class="user-id-input" placeholder="User ID">
 
-        <label>مفتاح العملية (TX_REF / Key)</label>
-        <input type="text" id="txRef" placeholder="مثلاً: dep_17099... أو wd_17099...">
+        <label>مفتاح العملية (TX_REF)</label>
+        <div class="input-group">
+            <input type="text" id="txRef" placeholder="dep_123... | wd_456...">
+            <button onclick="pasteToTxRef()" title="لصق من الحافظة">📋</button>
+        </div>
 
         <div class="btn-group">
             <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
@@ -109,89 +192,201 @@
     </div>
 
     <div class="card">
-        <h3>🛠️ تعديل يدوي لمستخدم</h3>
-        <div class="note">
-            تنبيه: هذا التعديل لا يظهر في السجل، يستخدم للطوارئ فقط.
-        </div>
+        <h3>🛠️ تعديل يدوي مباشر</h3>
+        
+        <label>معرف المستخدم (Target ID)</label>
+        <input type="number" id="manualId" class="user-id-input" placeholder="User ID">
 
-        <label>معرف المستخدم</label>
-        <input type="text" id="manualId" placeholder="User ID">
-
-        <label>إضافة رصيد (أدخل سالب للخصم)</label>
-        <input type="number" id="manualBalance" placeholder="0.00">
+        <label>تعديل الرصيد (+ إضافة / - خصم)</label>
+        <input type="number" id="manualBalance" placeholder="اتركه فارغاً للتجاهل">
 
         <label>تغيير مستوى VIP</label>
         <select id="manualVip">
             <option value="">-- لا تغيير --</option>
             <option value="0">VIP 0 (Free)</option>
-            <option value="1">VIP 1 (Basic)</option>
-            <option value="2">VIP 2 (Pro)</option>
-            <option value="3">VIP 3 (Elite)</option>
+            <option value="1">VIP 1 (Bronze)</option>
+            <option value="2">VIP 2 (Silver)</option>
+            <option value="3">VIP 3 (Gold)</option>
         </select>
 
-        <button class="btn-blue" onclick="manualUpdate()">تحديث البيانات</button>
+        <div class="checkbox-container">
+            <input type="checkbox" id="confirmCheck">
+            <label for="confirmCheck" style="margin:0; color:white; cursor:pointer;">أنا متأكد من البيانات</label>
+        </div>
+
+        <button class="btn-blue" onclick="manualUpdate()">💾 تنفيذ التعديلات</button>
     </div>
 
     <script>
-        // ⚠️ تأكد من أن هذا الرابط مطابق لملفك في Cloudflare
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const tg = window.Telegram.WebApp;
-        
-        // توسيع الصفحة
         tg.expand();
 
-        async function api(action, payload) {
-            // إظهار تحميل
-            tg.MainButton.showProgress();
+        // --- أدوات النظام (System Tools) ---
+
+        // 1. تحميل آخر User ID عند الفتح
+        window.onload = function() {
+            const lastId = localStorage.getItem('lastAdminUserId');
+            if(lastId) {
+                // تعبئة كل حقول الـ ID تلقائياً
+                document.querySelectorAll('.user-id-input').forEach(input => {
+                    input.value = lastId;
+                });
+            }
+        };
+
+        // حفظ الـ ID لاستخدامه لاحقاً
+        function saveUserId(id) {
+            if(id) {
+                localStorage.setItem('lastAdminUserId', id);
+                // تحديث باقي الحقول في الصفحة فوراً
+                document.querySelectorAll('.user-id-input').forEach(input => {
+                    input.value = id;
+                });
+            }
+        }
+
+        // 2. إدارة الأزرار واللودر
+        function setBusyState(isBusy) {
+            const loader = document.getElementById('loader-overlay');
+            const buttons = document.querySelectorAll('button');
+            const inputs = document.querySelectorAll('input, select');
+
+            loader.style.display = isBusy ? 'flex' : 'none';
+
+            buttons.forEach(btn => btn.disabled = isBusy);
+            inputs.forEach(inp => inp.disabled = isBusy);
+        }
+
+        // 3. نظام الإشعارات الملون (Toast)
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById("toast");
+            toast.className = "show " + type; // success, error, warning
+            toast.innerText = message;
             
+            // إخفاء بعد 3 ثواني
+            setTimeout(function(){ 
+                toast.className = toast.className.replace("show", ""); 
+            }, 3000);
+        }
+
+        // 4. لصق سريع لـ TX_REF
+        async function pasteToTxRef() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('txRef').value = text;
+                showToast("تم اللصق من الحافظة", "warning");
+            } catch (err) {
+                showToast("الوصول للحافظة مرفوض", "error");
+            }
+        }
+
+        // --- الاتصال بالسيرفر ---
+        async function api(action, payload) {
+            setBusyState(true);
             try {
                 const res = await fetch(SERVER, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        initData: tg.initData, // ضروري جداً للتحقق من أنك الأدمن
-                        action,
-                        payload
+                        initData: tg.initData,
+                        action: action,
+                        payload: payload
                     })
                 });
                 const data = await res.json();
-                tg.MainButton.hideProgress();
+                setBusyState(false);
                 return data;
             } catch (e) {
-                tg.MainButton.hideProgress();
-                alert("خطأ في الاتصال: " + e.message);
+                setBusyState(false);
+                showToast("خطأ في الاتصال: " + e.message, "error");
                 return { ok: false };
             }
         }
 
-        async function updateStatus(status) {
-            const targetId = document.getElementById('targetId').value;
-            const txRef = document.getElementById('txRef').value;
+        // --- العمليات ---
 
-            if (!targetId || !txRef) {
-                return alert("الرجاء إدخال User ID ومفتاح العملية TX_REF");
-            }
+        // 1. بحث
+        async function fetchUserInfo() {
+            const id = document.getElementById('searchId').value;
+            if(!id) return showToast("أدخل المعرف أولاً", "error");
+            
+            saveUserId(id); // حفظ الـ ID
 
-            if(!confirm(`هل أنت متأكد من ${status === 'approved' ? 'الموافقة' : 'الرفض'}؟`)) return;
+            const data = await api("admin_get_user", { targetUserId: id });
+            const resultBox = document.getElementById('searchResult');
 
-            const data = await api("admin_update_status", {
-                targetUserId: targetId,
-                txRef: txRef,
-                status: status
-            });
-
-            if (data.ok) {
-                alert(`تمت العملية: ${status}`);
-                // تفريغ الحقول
-                document.getElementById('targetId').value = '';
-                document.getElementById('txRef').value = '';
+            if(data.ok && data.user) {
+                resultBox.style.display = "block";
+                resultBox.innerHTML = `
+                    <div style="font-size:0.9rem; line-height:1.6;">
+                        👤 <b>الاسم:</b> ${data.user.firstName || 'Unknown'}<br>
+                        💰 <b>الرصيد:</b> <span style="color:#00E676">${data.user.balance} USDT</span><br>
+                        💎 <b>الرتبة:</b> VIP ${data.user.vipLevel}
+                    </div>
+                `;
+                showToast("تم جلب البيانات", "success");
             } else {
-                alert("فشل: " + (data.error || "تأكد أنك تستخدم حساب الأدمن وتفتح الصفحة من داخل البوت"));
+                resultBox.style.display = "none";
+                showToast("المستخدم غير موجود", "error");
             }
         }
 
+        // 2. موافقة / رفض
+        async function updateStatus(status) {
+            const targetId = document.getElementById('targetId').value.trim();
+            const txRef = document.getElementById('txRef').value.trim();
+
+            if (!targetId || !txRef) return showToast("البيانات ناقصة!", "error");
+            if (!txRef.includes('_')) return showToast("TX_REF غير صالح", "error");
+
+            saveUserId(targetId);
+
+            tg.showConfirm(`تأكيد العملية؟`, async (confirmed) => {
+                if (!confirmed) return;
+                
+                const data = await api("admin_update_status", { targetUserId: targetId, txRef, status });
+                
+                if (data.ok) {
+                    showToast("✅ تم تنفيذ العملية بنجاح", "success");
+                    document.getElementById('txRef').value = ''; // مسح المفتاح فقط
+                } else {
+                    showToast("❌ فشل: " + (data.error || "غير معروف"), "error");
+                }
+            });
+        }
+
+        // 3. تعديل يدوي ذكي
         async function manualUpdate() {
-            alert("هذه الميزة تتطلب تفعيل 'admin_manual_edit' في الوركر. حالياً استخدم الموافقة على الإيداعات للتحكم بالرصيد.");
+            const targetId = document.getElementById('manualId').value.trim();
+            const balanceInput = document.getElementById('manualBalance').value;
+            const vipInput = document.getElementById('manualVip').value;
+            const isConfirmed = document.getElementById('confirmCheck').checked;
+
+            if (!targetId) return showToast("مطلوب معرف المستخدم", "error");
+            if (!isConfirmed) return showToast("يجب تأكيد العملية أولاً", "warning");
+
+            saveUserId(targetId);
+
+            // بناء البايلود الذكي
+            let payload = { targetUserId: targetId };
+            if (balanceInput !== "") payload.manualBalance = parseFloat(balanceInput);
+            if (vipInput !== "") payload.manualVip = parseInt(vipInput);
+
+            if (Object.keys(payload).length === 1) {
+                return showToast("لم يتم إدخال تغييرات!", "warning");
+            }
+
+            const data = await api("admin_manual_edit", payload);
+
+            if (data.ok) {
+                showToast("✅ تم التعديل وحفظ البيانات", "success");
+                document.getElementById('manualBalance').value = '';
+                document.getElementById('manualVip').value = '';
+                document.getElementById('confirmCheck').checked = false;
+            } else {
+                showToast("⛔ خطأ: " + (data.error || "الصلاحيات"), "error");
+            }
         }
     </script>
 </body>
