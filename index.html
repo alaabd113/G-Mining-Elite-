@@ -128,7 +128,11 @@
                             <div style="margin-top:5px; color:#888;">Max Withdraw: ${{ plan.maxDailyWithdraw }}</div>
                         </div>
                         <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
-                        <button v-else class="btn-main" @click="buyVip(Number(level))">{{ t[lang].upgrade }}</button>
+                        
+                        <button v-else class="btn-main" :disabled="vipLoading === Number(level)" @click="buyVip(Number(level))">
+                            <span v-if="vipLoading === Number(level)">...</span>
+                            <span v-else>{{ t[lang].upgrade }}</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -161,6 +165,14 @@
                                     <button class="btn-main" style="margin-top:10px" @click="setupPin">{{ t[lang].savePin }}</button>
                                 </div>
                                 <div v-else>
+                                    <div style="margin-bottom:15px; text-align:center;">
+                                        <span style="font-size:0.8rem; color:#888; display:block; margin-bottom:5px;">{{ lang === 'ar' ? 'شبكة السحب' : 'Network' }}</span>
+                                        <van-radio-group v-model="depositNetwork" direction="horizontal" style="justify-content:center;">
+                                            <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
+                                            <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
+                                        </van-radio-group>
+                                    </div>
+
                                     <div style="background:rgba(0,230,118,0.1); color:var(--primary); padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.8rem; text-align:center;">
                                         Limit: ${{ vipPlans[user.vip].maxDailyWithdraw || 0 }} / Day
                                     </div>
@@ -241,6 +253,10 @@
                 const fakeWithdraw = ref({ show: false, text: "", active: false });
                 const showSupport = ref(false); const supportMsg = ref(''); const serverError = ref(false);
                 const refLogs = ref([]);
+                
+                // ✅ تعريف المتغير vipLoading (إصلاح الخطأ)
+                const vipLoading = ref(null);
+                
                 const tg = window.Telegram.WebApp; tg.expand();
 
                 const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { serverError.value = true; return { ok: false, error: "Connection Error" }; } };
@@ -249,30 +265,37 @@
                 const refresh = async () => { const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); if (data.ok) { user.value = data.user; inGroup.value = data.inGroup; loading.value = false; if(user.value.vip>0) startFakeBar(); fetchLogs(); } };
                 const fetchLogs = async () => { const data = await api("get_logs"); if (data.ok) { refLogs.value = data.refLogs; } };
 
-                const handleCollect = async () => { const data = await api("mine"); if (data.ok) { user.value = data.user; vant.showSuccessToast('+ Profit'); startFakeBar(); } else vant.showNotify({ type: 'warning', message: data.error }); };
+                const handleCollect = async () => { 
+                    const data = await api("mine"); 
+                    if (data.ok) { 
+                        user.value = data.user; 
+                        // ✅ رسالة مخصصة
+                        vant.showSuccessToast(lang.value === 'ar' ? '+ تم إضافة الربح' : '+ Profit Added'); 
+                        startFakeBar(); 
+                    } else vant.showNotify({ type: 'warning', message: data.error }); 
+                };
+                
                 const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set ✅'); } };
                 
-                // ✅ وظيفة السحب المحسنة (Validation + Dialog)
+                // ✅ وظيفة السحب المحسنة (Validation + Dialog + Network)
                 const withdraw = async () => {
-                    // 1. التحقق من طول العنوان
                     if (!wAddr.value || wAddr.value.length < 20) {
                         return vant.showToast(lang.value === 'ar' ? '⚠️ عنوان المحفظة قصير جداً أو غير صحيح' : '⚠️ Wallet address too short or invalid');
                     }
                     
-                    const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: "USDT" });
+                    // ✅ تم ربط الشبكة
+                    const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
                     
                     if (data.ok) { 
                         user.value = data.user; 
                         vant.showSuccessToast('Request Sent'); 
                         wAmt.value=''; wPin.value=''; 
                     } else {
-                        // 2. معالجة الأخطاء الذكية
                         const err = data.error || "Error";
-                        // إذا كان الخطأ تقنياً أو منعاً، نستخدم Dialog
+                        // رسائل خطأ ذكية
                         if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System")) {
                             vant.showDialog({ title: '⚠️ Note', message: err });
                         } else {
-                            // أخطاء بسيطة مثل الرصيد
                             vant.showNotify({ type: 'danger', message: err });
                         }
                     }
