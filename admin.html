@@ -3,188 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenDrip Admin Pro</title>
+    <title>TokenDrip Admin</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #0f0f0f;
-            --card-bg: #1c1c1c;
-            --primary: #00E676;
-            --danger: #f44336;
-            --warning: #FFC107;
-            --text-color: #ffffff;
-            --input-bg: #252525;
-            --border: #333;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Cairo', sans-serif;
-            margin: 0;
-            padding: 20px;
-            padding-bottom: 80px; /* مساحة للإشعار */
-        }
-
+        :root { --bg-color: #0f0f0f; --card-bg: #1c1c1c; --primary: #00E676; --danger: #f44336; --warning: #FFC107; --text-color: #ffffff; --input-bg: #252525; --border: #333; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding: 20px; padding-bottom: 80px; }
         .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { margin: 0; font-size: 1.5rem; }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
-        
         label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem; margin-top: 10px;}
-        
-        /* Input Group لتحسين زر النسخ */
         .input-group { display: flex; gap: 5px; }
         .input-group input { border-radius: 8px 0 0 8px; margin-bottom: 5px; }
-        .input-group button { 
-            width: 50px; flex: none; border-radius: 0 8px 8px 0; 
-            margin-bottom: 5px; padding: 0; display: flex; 
-            align-items: center; justify-content: center; font-size: 1.2rem;
-            background: #333; color: white;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            background: var(--input-bg);
-            border: 1px solid #444;
-            border-radius: 8px;
-            color: white;
-            font-family: inherit;
-            font-size: 1rem;
-            margin-bottom: 5px;
-            box-sizing: border-box;
-            transition: 0.3s;
-        }
-
-        input:focus { border-color: var(--primary); outline: none; }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 15px;}
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: inherit;
-            transition: 0.2s;
-            font-size: 1rem;
-        }
-
-        /* تأثير التعطيل */
-        button:disabled, input:disabled, select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(100%);
-        }
-
-        .btn-approve { background: var(--primary); color: #000; }
-        .btn-reject { background: var(--danger); color: white; }
+        .input-group button { width: 50px; flex: none; border-radius: 0 8px 8px 0; margin-bottom: 5px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #333; color: white; }
+        input, select { width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid #444; border-radius: 8px; color: white; font-family: inherit; font-size: 1rem; margin-bottom: 5px; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 15px; margin-top: 15px;}
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: inherit; transition: 0.2s; font-size: 1rem; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-approve { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,230,118,0.2); border: 1px solid var(--primary); }
+        .btn-reject { background: rgba(244,67,54,0.1); color: var(--danger); border: 1px solid var(--danger); box-shadow: 0 0 10px rgba(244,67,54,0.1); }
         .btn-blue { background: #2196F3; color: white; width: 100%; margin-top: 15px;}
+        .btn-ban { background: #660000; color: white; border: 1px solid #ff0000; margin-top: 10px; }
+        .btn-unban { background: #333; color: white; border: 1px solid #555; margin-top: 10px; }
         .btn-search { background: #FF9800; color: black; margin-top: 10px; width: 100%; }
-
-        .note {
-            font-size: 0.8rem; color: #888; background: rgba(255,255,255,0.05);
-            padding: 10px; border-radius: 6px; margin-bottom: 15px; line-height: 1.4;
-        }
-
-        .checkbox-container {
-            display: flex; align-items: center; margin-top: 15px; font-size: 0.9rem;
-            background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 6px;
-        }
-        .checkbox-container input { width: auto; margin: 0 0 0 10px; cursor: pointer; }
-
-        /* Loader Overlay */
-        #loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 9999;
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center;
-        }
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid #333;
-            border-top: 5px solid var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite; mb-3;
-        }
+        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; mb-3; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Toast Notification (رسائل ملونة) */
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 50px;
-            padding: 16px;
-            position: fixed;
-            z-index: 10000;
-            left: 50%;
-            bottom: 30px;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            opacity: 0;
-            transition: opacity 0.5s, bottom 0.5s;
-        }
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); opacity: 0; transition: 0.5s; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
         #toast.success { background-color: var(--primary); color: black; }
         #toast.error { background-color: var(--danger); }
-        #toast.warning { background-color: var(--warning); color: black; }
-        
-        #searchResult {
-            margin-top: 10px; padding: 10px; background: #2a2a2a; 
-            border-radius: 6px; border: 1px dashed #555; display: none;
-        }
+        #searchResult { margin-top: 10px; padding: 10px; background: #2a2a2a; border-radius: 6px; border: 1px dashed #555; display: none; }
+        .log-entry { font-size: 0.8rem; border-bottom: 1px solid #444; padding: 5px 0; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
-    <div id="loader-overlay">
-        <div class="spinner"></div>
-        <p style="margin-top: 15px;">جاري الاتصال...</p>
-    </div>
-
+    <div id="loader-overlay"><div class="spinner"></div><p style="margin-top: 15px;">جاري الاتصال...</p></div>
     <div id="toast">تمت العملية!</div>
-
-    <div class="header">
-        <h1>🛡️ لوحة التحكم Pro</h1>
-        <p style="color: #666;">إصدار متقدم مع تحسينات UX</p>
-    </div>
-
+    <div class="header"><h1>🛡️ Admin Panel</h1></div>
+    
     <div class="card">
-        <h3>🔍 استعلام عن مستخدم</h3>
+        <h3>🔍 فحص مستخدم (Check User)</h3>
         <input type="number" id="searchId" class="user-id-input" placeholder="User ID">
-        <button class="btn-search" onclick="fetchUserInfo()">بحث</button>
+        <button class="btn-search" onclick="fetchUserInfo()">بحث واستعلام</button>
         <div id="searchResult"></div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn-ban" onclick="toggleBan(true)">🚫 حظر (Ban)</button>
+            <button class="btn-unban" onclick="toggleBan(false)">🔓 فك الحظر</button>
+        </div>
     </div>
 
     <div class="card">
-        <h3>⚡ معالجة الطلبات</h3>
-        <div class="note">
-            تم تحسين النسخ: اضغط على الزر بجانب الحقل لنسخ أو لصق البيانات.
-        </div>
-
-        <label>معرف المستخدم (User ID)</label>
+        <h3>⚡ معالجة المعاملات (Process TX)</h3>
+        <label>User ID</label>
         <input type="number" id="targetId" class="user-id-input" placeholder="User ID">
-
-        <label>مفتاح العملية (TX_REF)</label>
+        <label>TX Reference</label>
         <div class="input-group">
-            <input type="text" id="txRef" placeholder="dep_123... | wd_456...">
-            <button onclick="pasteToTxRef()" title="لصق من الحافظة">📋</button>
+            <input type="text" id="txRef" placeholder="dep_... | wd_...">
+            <button onclick="pasteToTxRef()">📋</button>
         </div>
-
         <div class="btn-group">
             <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
             <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض</button>
@@ -192,139 +69,72 @@
     </div>
 
     <div class="card">
-        <h3>🛠️ تعديل يدوي مباشر</h3>
-        
-        <label>معرف المستخدم (Target ID)</label>
+        <h3>🛠️ تعديل الرصيد/VIP</h3>
+        <label>Target ID</label>
         <input type="number" id="manualId" class="user-id-input" placeholder="User ID">
-
-        <label>تعديل الرصيد (+ إضافة / - خصم)</label>
-        <input type="number" id="manualBalance" placeholder="اتركه فارغاً للتجاهل">
-
+        <label>تعديل الرصيد</label>
+        <input type="number" id="manualBalance" placeholder="+ / -">
         <label>تغيير مستوى VIP</label>
         <select id="manualVip">
             <option value="">-- لا تغيير --</option>
-            <option value="0">VIP 0 (Free)</option>
-            <option value="1">VIP 1 (Bronze)</option>
-            <option value="2">VIP 2 (Silver)</option>
-            <option value="3">VIP 3 (Gold)</option>
+            <option value="0">VIP 0</option>
+            <option value="1">VIP 1</option>
+            <option value="2">VIP 2</option>
+            <option value="3">VIP 3</option>
+            <option value="4">VIP 4</option>
+            <option value="5">VIP 5</option>
+            <option value="6">VIP 6</option>
         </select>
-
-        <div class="checkbox-container">
-            <input type="checkbox" id="confirmCheck">
-            <label for="confirmCheck" style="margin:0; color:white; cursor:pointer;">أنا متأكد من البيانات</label>
-        </div>
-
-        <button class="btn-blue" onclick="manualUpdate()">💾 تنفيذ التعديلات</button>
+        <button class="btn-blue" onclick="manualUpdate()">💾 حفظ التعديلات</button>
     </div>
 
     <script>
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
+        const ALLOWED_ADMIN_ID = 921301895;
+
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- أدوات النظام (System Tools) ---
-
-        // 1. تحميل آخر User ID عند الفتح
-        window.onload = function() {
-            const lastId = localStorage.getItem('lastAdminUserId');
-            if(lastId) {
-                // تعبئة كل حقول الـ ID تلقائياً
-                document.querySelectorAll('.user-id-input').forEach(input => {
-                    input.value = lastId;
-                });
-            }
-        };
-
-        // حفظ الـ ID لاستخدامه لاحقاً
-        function saveUserId(id) {
-            if(id) {
-                localStorage.setItem('lastAdminUserId', id);
-                // تحديث باقي الحقول في الصفحة فوراً
-                document.querySelectorAll('.user-id-input').forEach(input => {
-                    input.value = id;
-                });
-            }
+        if (!tg.initDataUnsafe?.user || tg.initDataUnsafe.user.id !== ALLOWED_ADMIN_ID) {
+            document.body.innerHTML = `<div style="display:flex; height:100vh; flex-direction:column; justify-content:center; align-items:center; background:black; color:red; text-align:center;"><h1 style="font-size:3rem;">🚫</h1><h2>Access Denied</h2><p>You are not authorized to view this page.</p></div>`;
+            throw new Error("Unauthorized Access Attempts Blocked.");
         }
 
-        // 2. إدارة الأزرار واللودر
-        function setBusyState(isBusy) {
-            const loader = document.getElementById('loader-overlay');
-            const buttons = document.querySelectorAll('button');
-            const inputs = document.querySelectorAll('input, select');
+        window.onload = function() { const lastId = localStorage.getItem('lastAdminUserId'); if(lastId) document.querySelectorAll('.user-id-input').forEach(input => input.value = lastId); };
+        function saveUserId(id) { if(id) { localStorage.setItem('lastAdminUserId', id); document.querySelectorAll('.user-id-input').forEach(input => input.value = id); } }
+        function setBusyState(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
+        function showToast(message, type = 'success') { const toast = document.getElementById("toast"); toast.className = "show " + type; toast.innerText = message; setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000); }
+        async function pasteToTxRef() { try { const text = await navigator.clipboard.readText(); document.getElementById('txRef').value = text; showToast("تم اللصق", "success"); } catch (err) { showToast("تعذر اللصق", "error"); } }
 
-            loader.style.display = isBusy ? 'flex' : 'none';
-
-            buttons.forEach(btn => btn.disabled = isBusy);
-            inputs.forEach(inp => inp.disabled = isBusy);
-        }
-
-        // 3. نظام الإشعارات الملون (Toast)
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById("toast");
-            toast.className = "show " + type; // success, error, warning
-            toast.innerText = message;
-            
-            // إخفاء بعد 3 ثواني
-            setTimeout(function(){ 
-                toast.className = toast.className.replace("show", ""); 
-            }, 3000);
-        }
-
-        // 4. لصق سريع لـ TX_REF
-        async function pasteToTxRef() {
-            try {
-                const text = await navigator.clipboard.readText();
-                document.getElementById('txRef').value = text;
-                showToast("تم اللصق من الحافظة", "warning");
-            } catch (err) {
-                showToast("الوصول للحافظة مرفوض", "error");
-            }
-        }
-
-        // --- الاتصال بالسيرفر ---
         async function api(action, payload) {
             setBusyState(true);
             try {
-                const res = await fetch(SERVER, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        initData: tg.initData,
-                        action: action,
-                        payload: payload
-                    })
-                });
-                const data = await res.json();
+                const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) });
                 setBusyState(false);
-                return data;
+                return await res.json();
             } catch (e) {
                 setBusyState(false);
-                showToast("خطأ في الاتصال: " + e.message, "error");
+                showToast("Error: " + e.message, "error");
                 return { ok: false };
             }
         }
 
-        // --- العمليات ---
-
-        // 1. بحث
         async function fetchUserInfo() {
             const id = document.getElementById('searchId').value;
-            if(!id) return showToast("أدخل المعرف أولاً", "error");
-            
-            saveUserId(id); // حفظ الـ ID
-
+            if(!id) return showToast("أدخل المعرف", "error");
+            saveUserId(id);
             const data = await api("admin_get_user", { targetUserId: id });
             const resultBox = document.getElementById('searchResult');
 
             if(data.ok && data.user) {
+                let logsHtml = '';
+                if(data.user.logs && data.user.logs.length > 0) {
+                    logsHtml = `<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;"><small style="color:#aaa">آخر النشاطات:</small>`;
+                    data.user.logs.slice(0, 5).forEach(l => { logsHtml += `<div class="log-entry"><span>${l.type}</span><span style="color:${l.amount>0?'#00E676':'#FF5252'}">${l.amount}$</span></div>`; });
+                    logsHtml += `</div>`;
+                }
                 resultBox.style.display = "block";
-                resultBox.innerHTML = `
-                    <div style="font-size:0.9rem; line-height:1.6;">
-                        👤 <b>الاسم:</b> ${data.user.firstName || 'Unknown'}<br>
-                        💰 <b>الرصيد:</b> <span style="color:#00E676">${data.user.balance} USDT</span><br>
-                        💎 <b>الرتبة:</b> VIP ${data.user.vipLevel}
-                    </div>
-                `;
+                resultBox.innerHTML = `<div style="font-size:0.9rem; line-height:1.6;">👤 <b>الاسم:</b> ${data.user.username || 'Unknown'}<br>💰 <b>الرصيد:</b> <span style="color:#00E676">${data.user.balance}$</span><br>💎 <b>VIP:</b> Level ${data.user.vip}<br>👥 <b>الإحالات:</b> ${data.user.referrals}<br>🚫 <b>محظور:</b> <span style="color:${data.user.isBanned ? 'red' : 'green'}">${data.user.isBanned ? 'نعم (BANNED)' : 'لا'}</span>${logsHtml}</div>`;
                 showToast("تم جلب البيانات", "success");
             } else {
                 resultBox.style.display = "none";
@@ -332,61 +142,41 @@
             }
         }
 
-        // 2. موافقة / رفض
+        // ✅ وظيفة الحظر الجديدة
+        async function toggleBan(isBanned) {
+            const id = document.getElementById('searchId').value;
+            if(!id) return showToast("أدخل المعرف في خانة البحث أولاً", "error");
+            if (!confirm(`⚠️ هل أنت متأكد من ${isBanned ? "حظر" : "فك حظر"} المستخدم ${id}؟`)) return;
+            const data = await api("admin_toggle_ban", { targetUserId: id, isBanned });
+            if(data.ok) { showToast(isBanned ? "تم الحظر 🚫" : "تم فك الحظر 🔓", "success"); fetchUserInfo(); }
+            else showToast("فشل: " + data.error, "error");
+        }
+
         async function updateStatus(status) {
             const targetId = document.getElementById('targetId').value.trim();
             const txRef = document.getElementById('txRef').value.trim();
-
-            if (!targetId || !txRef) return showToast("البيانات ناقصة!", "error");
-            if (!txRef.includes('_')) return showToast("TX_REF غير صالح", "error");
-
+            if (!targetId || !txRef) return showToast("بيانات ناقصة", "error");
+            if (!confirm(status === 'approved' ? "⚠️ هل أنت متأكد من الموافقة؟" : "⚠️ هل أنت متأكد من الرفض؟")) return;
             saveUserId(targetId);
-
-            tg.showConfirm(`تأكيد العملية؟`, async (confirmed) => {
-                if (!confirmed) return;
-                
-                const data = await api("admin_update_status", { targetUserId: targetId, txRef, status });
-                
-                if (data.ok) {
-                    showToast("✅ تم تنفيذ العملية بنجاح", "success");
-                    document.getElementById('txRef').value = ''; // مسح المفتاح فقط
-                } else {
-                    showToast("❌ فشل: " + (data.error || "غير معروف"), "error");
-                }
-            });
+            const data = await api("admin_update_status", { targetUserId: targetId, txRef, status });
+            if (data.ok) { showToast(status === 'approved' ? "تمت الموافقة ✅" : "تم الرفض ❌", status === 'approved' ? 'success' : 'error'); document.getElementById('txRef').value = ''; }
+            else { showToast("فشل: " + data.error, "error"); }
         }
 
-        // 3. تعديل يدوي ذكي
         async function manualUpdate() {
             const targetId = document.getElementById('manualId').value.trim();
             const balanceInput = document.getElementById('manualBalance').value;
             const vipInput = document.getElementById('manualVip').value;
-            const isConfirmed = document.getElementById('confirmCheck').checked;
-
-            if (!targetId) return showToast("مطلوب معرف المستخدم", "error");
-            if (!isConfirmed) return showToast("يجب تأكيد العملية أولاً", "warning");
-
-            saveUserId(targetId);
-
-            // بناء البايلود الذكي
+            if (!targetId) return showToast("حدد المستخدم", "error");
             let payload = { targetUserId: targetId };
             if (balanceInput !== "") payload.manualBalance = parseFloat(balanceInput);
             if (vipInput !== "") payload.manualVip = parseInt(vipInput);
-
-            if (Object.keys(payload).length === 1) {
-                return showToast("لم يتم إدخال تغييرات!", "warning");
-            }
-
+            if (Object.keys(payload).length === 1) return showToast("لم تقم بأي تعديل", "warning");
+            if (!confirm(`⚠️ تحذير أمني:\nهل أنت متأكد من تعديل بيانات ${targetId} يدوياً؟`)) return;
+            saveUserId(targetId);
             const data = await api("admin_manual_edit", payload);
-
-            if (data.ok) {
-                showToast("✅ تم التعديل وحفظ البيانات", "success");
-                document.getElementById('manualBalance').value = '';
-                document.getElementById('manualVip').value = '';
-                document.getElementById('confirmCheck').checked = false;
-            } else {
-                showToast("⛔ خطأ: " + (data.error || "الصلاحيات"), "error");
-            }
+            if (data.ok) { showToast("تم الحفظ ✅", "success"); document.getElementById('manualBalance').value = ''; document.getElementById('manualVip').value = ''; }
+            else { showToast("خطأ: " + data.error, "error"); }
         }
     </script>
 </body>
