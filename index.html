@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TokenDrip Rewards Pro</title>
+    <title>TokenDrip Pro</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
@@ -18,429 +18,189 @@
             --primary: #00E676; --primary-dark: #00C853;
             --text-color: #ffffff; --text-sec: #888;
             --danger: #FF5252; --warning: #FFC107;
-            --bronze: #cd7f32; --silver: #c0c0c0; --gold: #FFD700;
         }
-
-        body { 
-            background-color: var(--bg-color); color: var(--text-color); 
-            font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; 
-            user-select: none; -webkit-tap-highlight-color: transparent;
-        }
-
-        .van-popup, .van-dialog, .van-toast { background: var(--card-bg) !important; color: white !important; }
-        .van-cell { background: transparent; color: white; }
-        .van-cell::after { border-bottom: 1px solid #333; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         
-        .card { 
-            background: var(--card-bg); border-radius: 16px; padding: 16px; margin: 15px; 
-            border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        
-        /* تأثير الوميض للتحميل */
-        .pulse-loader { animation: pulse 1.5s infinite ease-in-out; opacity: 0.6; font-family: monospace; }
-        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
-
         /* شريط السحوبات */
-        .marquee-container {
-            background: rgba(0, 230, 118, 0.05); border-bottom: 1px solid rgba(0, 230, 118, 0.1);
-            height: 40px; overflow: hidden; display: flex; align-items: center; padding: 0 15px;
-        }
-        .marquee-item {
-            display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #ddd;
-            height: 40px; justify-content: flex-start;
-        }
-        .user-mask { font-weight: bold; color: var(--primary); }
-
-        /* شريط VIP الأفقي */
-        .vip-scroll-container {
-            display: flex; gap: 15px; overflow-x: auto; padding: 10px 15px;
-            scrollbar-width: none;
-        }
-        .vip-scroll-container::-webkit-scrollbar { display: none; }
+        .fake-bar { position: fixed; top: 0; left: 0; width: 100%; height: 30px; background: rgba(0, 230, 118, 0.1); border-bottom: 1px solid rgba(0, 230, 118, 0.2); z-index: 1000; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--primary); backdrop-filter: blur(5px); transform: translateY(-100%); transition: transform 0.5s ease; }
+        .fake-bar.visible { transform: translateY(0); }
+        .fake-bar i { margin-left: 5px; animation: blink 2s infinite; }
         
-        .vip-card {
-            min-width: 260px; background: linear-gradient(145deg, #252525, #1a1a1a);
-            border-radius: 16px; padding: 20px; position: relative;
-            border: 1px solid #333; transition: transform 0.2s;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .vip-card:active { transform: scale(0.98); }
-        .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,230,118,0.2); }
+        /* الدائرة */
+        .harvest-circle { width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle, rgba(0,230,118,0.1) 0%, rgba(0,0,0,0) 70%); border: 2px dashed var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 30px auto; position: relative; cursor: pointer; transition: 0.3s; }
+        .harvest-circle:active { transform: scale(0.95); }
+        .harvest-circle.disabled { border-color: #444; background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%); filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; pointer-events: none; }
         
-        .vip-badge {
-            position: absolute; top: 10px; left: 10px; 
-            font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #333;
-        }
-        .vip-card.bronze-tier h3 { color: var(--bronze); }
-        .vip-card.silver-tier h3 { color: var(--silver); }
-        .vip-card.gold-tier h3 { color: var(--gold); }
+        /* تنسيقات */
+        .van-popup, .van-dialog, .van-toast { background: var(--card-bg) !important; color: white !important; }
+        .van-cell { background: transparent; color: white; padding: 10px 0; }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .vip-scroll-container { display: flex; gap: 15px; overflow-x: auto; padding: 10px 15px; scrollbar-width: none; }
+        .vip-card { min-width: 260px; background: linear-gradient(145deg, #252525, #1a1a1a); border-radius: 16px; padding: 20px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+        .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.15); }
+        .btn-main { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); border: none; color: black; font-weight: bold; font-size: 1rem; border-radius: 8px; }
+        .van-tabbar { background-color: #161616; border-top: 1px solid #333; }
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; font-size: 0.9rem; }
+        .amount-pos { color: var(--primary); } .amount-neg { color: var(--danger); }
+        .wallet-box { background: #111; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; border: 1px solid #333; transition: 0.3s; }
         
-        /* دائرة المكافآت */
-        .harvest-circle {
-            width: 200px; height: 200px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,230,118,0.08) 0%, rgba(0,0,0,0) 70%);
-            border: 2px dashed var(--primary);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin: 20px auto; position: relative; cursor: pointer;
-            transition: 0.2s;
-        }
-        .harvest-circle:active { transform: scale(0.97); }
-        .harvest-circle.disabled { border-color: #444; filter: grayscale(1); opacity: 0.6; cursor: not-allowed; }
-        
-        .loader-ring {
-            position: absolute; width: 100%; height: 100%; border-radius: 50%;
-            border: 3px solid transparent; border-top-color: var(--primary);
-            animation: spin 0.8s linear infinite; display: none;
-        }
-        .harvest-circle.loading .loader-ring { display: block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .balance-box { 
-            font-size: 2.5rem; font-weight: 800; color: var(--primary); 
-            text-shadow: 0 0 15px rgba(0,230,118,0.2);
-            font-variant-numeric: tabular-nums; letter-spacing: -1px; margin: 5px 0;
-        }
-
-        .btn-main { 
-            background: linear-gradient(90deg, var(--primary), var(--primary-dark)); 
-            border: none; color: black; font-weight: bold; font-size: 1rem; border-radius: 8px;
-        }
-        .btn-outline {
-            background: transparent; border: 1px solid var(--primary); color: var(--primary);
-            font-weight: bold; border-radius: 8px;
-        }
-        
-        .van-tabbar { background-color: #161616; border-top: 1px solid #333; height: 65px; z-index: 99; }
-        .van-tabbar-item--active { background: transparent; color: var(--primary); }
-
-        .req-badge {
-            background: rgba(255, 82, 82, 0.15); color: var(--danger);
-            padding: 8px; border-radius: 8px; font-size: 0.8rem;
-            margin-bottom: 15px; border: 1px solid rgba(255, 82, 82, 0.3);
-            display: flex; align-items: center; gap: 5px;
-        }
-
-        .sync-bar {
-            background: rgba(255, 193, 7, 0.15); color: var(--warning);
-            font-size: 0.75rem; text-align: center; padding: 4px;
-            border-bottom: 1px solid rgba(255, 193, 7, 0.3);
-        }
+        /* Fallback UI */
+        .error-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
     <div id="app" v-cloak>
-        <div v-if="isSyncing" class="sync-bar">
-            <i class="ri-refresh-line"></i> جاري تحديث البيانات...
+        <div v-if="serverError" class="error-overlay">
+            <i class="ri-wifi-off-line" style="font-size: 4rem; color: var(--text-sec); margin-bottom: 20px;"></i>
+            <h3>الخدمة غير متاحة حالياً</h3>
+            <p style="color: #666;">يرجى التحقق من اتصالك أو المحاولة لاحقاً</p>
+            <van-button size="small" type="primary" @click="refreshPage">تحديث الصفحة</van-button>
         </div>
 
-        <div v-if="loading" style="padding: 20px; height: 100vh; display: flex; align-items: center; justify-content: center;">
-             <van-loading color="#00E676" vertical>جاري الاتصال...</van-loading>
-        </div>
-
-        <div v-else>
+        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }"><i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span></div>
+        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;"><van-loading color="#00E676" vertical>جاري التحميل...</van-loading></div>
+        
+        <div v-else style="padding-top: 30px;">
             <div v-if="activeTab === 'home'">
-                
-                <div class="marquee-container">
-                    <van-swipe vertical :autoplay="3000" :show-indicators="false" style="height: 40px; width: 100%;">
-                        <van-swipe-item v-for="(item, index) in fakeWithdrawals" :key="index" class="marquee-item">
-                            <i class="ri-checkbox-circle-fill" style="color: var(--primary)"></i>
-                            <span>قام <span class="user-mask">{{ item.user }}</span> بسحب <span style="color:white; font-weight:bold">${{ item.amount }}</span></span>
-                        </van-swipe-item>
-                    </van-swipe>
-                </div>
-
-                <div class="card" style="text-align: center; margin-top: 10px;">
+                <div class="card" style="text-align: center; margin-top: 20px;">
                     <span style="color: var(--text-sec); font-size: 0.9rem;">الرصيد المتاح</span>
-                    
-                    <div class="balance-box">
-                        <span v-if="isSyncing" class="pulse-loader">$--.--</span>
-                        <span v-else>${{ formatMoney(user.balance) }}</span>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
-                        <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
-                        <span v-if="user.vip > 0" style="color: var(--text-sec); font-size: 0.85rem;">
-                            {{ user.mineCount }}/{{ vipPlans[user.vip].dailyLimit }} مهام
-                        </span>
-                    </div>
+                    <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 5px 0;">${{ formatMoney(user.balance) }}</div>
+                    <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
                 </div>
-
-                <div class="harvest-circle" 
-                     :class="{ 
-                        disabled: isProcessing || isSyncing || user.vip === 0 || user.mineCount >= vipPlans[user.vip].dailyLimit, 
-                        loading: isProcessing
-                     }" 
-                     @click="handleCollect">
-                    
-                    <div class="loader-ring"></div>
-                    
-                    <div v-if="!isProcessing" style="text-align: center;">
-                        <i class="ri-hand-coin-line" style="font-size: 3rem; color: var(--primary);"></i>
-                        <h3 style="margin: 5px 0; color: white;">جمع المكافأة</h3>
-                        <span style="font-size: 0.8rem; color: #aaa;">
-                            {{ getStatusText() }}
-                        </span>
-                    </div>
+                
+                <div class="harvest-circle" :class="{ disabled: user.vip === 0 || user.mineCount >= vipPlans[user.vip].dailyLimit }" @click="handleCollect">
+                    <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
+                    <h3 style="margin: 5px 0; color: white;">إنجاز المهام</h3>
+                    <span style="font-size: 0.85rem; color: #aaa; font-weight: 600;">{{ getStatusText() }}</span>
                 </div>
-
-                <div style="padding: 10px 15px 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h3 style="margin:0; color:white;">ترقية الحساب</h3>
-                        <span style="font-size:0.8rem; color:#888;">اسحب للعرض 👈</span>
-                    </div>
+                
+                <div style="text-align: center; font-size: 0.75rem; color: #666; margin-top: -15px; margin-bottom: 20px;">
+                    * الأرباح اليومية تعتمد على الالتزام بالخطة النشطة
                 </div>
 
                 <div class="vip-scroll-container">
-                    <div v-for="(plan, level) in vipPlans" :key="level" 
-                         v-show="level > 0"
-                         class="vip-card"
-                         :class="[getTierClass(level), { 'active-plan': user.vip === Number(level) }]">
-                        
-                        <div class="vip-badge" v-if="user.vip === Number(level)">الحالية</div>
-
-                        <div style="text-align: center;">
-                            <h3 style="margin: 5px 0 15px;">{{ plan.name }}</h3>
-                            <div style="font-size: 1.8rem; font-weight: bold; color: white;">${{ plan.price }}</div>
-                        </div>
-
-                        <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                                <span>عائد يومي:</span>
-                                <span style="color:var(--primary)">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between;">
-                                <span>عمولة الإحالة:</span>
-                                <span style="color:var(--warning)">{{ (plan.refBonus * 100).toFixed(0) }}%</span>
-                            </div>
-                        </div>
-
-                        <van-button v-if="user.vip >= Number(level)" block disabled size="small" style="background:#444; color:#888; border:none;">مشترك</van-button>
-                        <van-button v-else block class="btn-outline" size="small"
-                            :loading="vipLoading === Number(level)"
-                            @click="buyVip(Number(level))">
-                            تفعيل الآن
-                        </van-button>
+                    <div v-for="(plan, level) in vipPlans" :key="level" v-show="level > 0" class="vip-card" :class="{ 'active-plan': user.vip === Number(level) }">
+                        <div style="position:absolute; top:10px; right:10px; font-size:1.5rem; opacity:0.2; font-weight:800; color:white;">{{ level }}</div>
+                        <div style="text-align: center;"><h3 style="margin: 5px 0 15px; color:white;">{{ plan.name }}</h3><div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div></div>
+                        <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>الربح اليومي:</span><span style="color:white">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div></div>
+                        <van-button v-if="user.vip >= Number(level)" block disabled color="#333">تم الاشتراك</van-button>
+                        <van-button v-else block class="btn-main" :loading="vipLoading === Number(level)" @click="buyVip(Number(level))">تفعيل الآن</van-button>
                     </div>
                 </div>
-                
-                <div style="height: 20px;"></div>
             </div>
 
             <div v-if="activeTab === 'wallet'">
-                <div class="card" style="min-height: 80vh;">
-                    <h2 style="text-align: center;">المحفظة</h2>
+                <div class="card">
+                    <h2 style="text-align: center; margin-bottom: 20px;">المحفظة</h2>
                     <van-tabs v-model:active="walletTab" background="transparent" color="#00E676" title-active-color="#00E676">
                         <van-tab title="إيداع">
-                            <div style="padding: 15px 0;">
-                                <div class="card" style="background: #111; text-align: center; padding: 20px;">
-                                    <div style="color:#888; font-size:0.8rem">USDT-TRC20</div>
-                                    <code style="color: var(--primary); font-size: 0.85rem; display:block; margin:10px 0; word-break:break-all;">{{ WALLETS.TRC20 }}</code>
-                                    <van-button size="mini" type="primary" @click="copyAddress">نسخ</van-button>
+                            <div style="padding: 20px 0;">
+                                <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:15px; justify-content:center;">
+                                    <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
+                                    <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
+                                </van-radio-group>
+                                <div class="wallet-box">
+                                    <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">عنوان USDT-{{ depositNetwork }} الخاص بك:</div>
+                                    <code style="color: var(--primary); word-break: break-all; font-size:0.9rem; font-weight:bold;">{{ WALLETS[depositNetwork] }}</code>
+                                    <div style="margin-top:15px"><van-button size="small" plain type="success" icon="todo-list-o" @click="copyAddress">نسخ العنوان</van-button></div>
                                 </div>
-                                <van-field v-model="depAmount" label="المبلغ" type="number" placeholder="مثلاً 20$"></van-field>
-                                <van-field v-model="depTxid" label="TXID" placeholder="رقم المعاملة"></van-field>
-                                <van-button block class="btn-main" style="margin-top:20px" :loading="isProcessing" :disabled="isSyncing" @click="submitDeposit">إرسال للمراجعة</van-button>
+                                <van-field v-model="depAmount" label="المبلغ ($)" type="number" placeholder="مثلاً: 20"></van-field>
+                                <van-field v-model="depTxid" label="TXID" placeholder="رقم المعاملة (Hash)"></van-field>
+                                <van-button block class="btn-main" style="margin-top:20px" :loading="isProcessing" @click="submitDeposit">تأكيد الإيداع</van-button>
                             </div>
                         </van-tab>
                         <van-tab title="سحب">
-                            <div style="padding: 15px 0;">
-                                <div v-if="user.referrals < CONFIG.MIN_REFS_TO_WITHDRAW" class="req-badge">
-                                    <i class="ri-lock-2-line"></i>
-                                    <span>السحب مقفل. يجب دعوة {{ CONFIG.MIN_REFS_TO_WITHDRAW }} أصدقاء. (لديك: {{ user.referrals }})</span>
-                                </div>
-                                <van-field v-model="wAmt" label="المبلغ" type="number" placeholder="الحد الأدنى 5$"></van-field>
-                                <van-field v-model="wAddr" label="العنوان" placeholder="عنوان USDT-TRC20"></van-field>
-                                <van-button block class="btn-main" style="margin-top:20px" :disabled="user.referrals < CONFIG.MIN_REFS_TO_WITHDRAW || isSyncing" :loading="isProcessing" @click="withdraw">طلب السحب</van-button>
+                            <div style="padding: 20px 0;">
+                                <div v-if="user.vip === 0" style="background: rgba(255,193,7,0.1); color: var(--warning); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;"><i class="ri-lock-2-line"></i> السحب متاح للأعضاء VIP فقط.</div>
+                                <van-field v-model="wAmt" label="المبلغ" type="number" placeholder="الحد الأدنى 1$"></van-field>
+                                <van-field v-model="wAddr" label="العنوان" placeholder="عنوان محفظتك"></van-field>
+                                <div style="font-size:0.8rem; color:#888; margin-top:10px;">✅ تتم المعالجة خلال 24 ساعة.<br>🔒 يسمح بطلب واحد يومياً.</div>
+                                <van-button block class="btn-main" style="margin-top:20px" :disabled="user.vip === 0" :loading="isProcessing" @click="withdraw">طلب السحب</van-button>
                             </div>
                         </van-tab>
                     </van-tabs>
+                </div>
+                <div class="card" v-if="logs.length > 0">
+                    <h3 style="margin-top:0">سجل العمليات</h3>
+                    <div v-for="log in logs" :key="log.date" class="log-item">
+                        <div><div>{{ formatLogType(log.type) }}</div><span style="font-size:0.75rem; color:#666;">{{ formatDate(log.date) }}</span></div>
+                        <div :class="log.amount > 0 ? 'amount-pos' : 'amount-neg'">{{ log.amount > 0 ? '+' : '' }}{{ log.amount }}$</div>
+                    </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'team'">
                 <div class="card" style="text-align: center; padding: 40px 20px;">
-                    <i class="ri-team-line" style="font-size: 4rem; color: var(--primary);"></i>
+                    <i class="ri-group-line" style="font-size: 4rem; color: var(--primary);"></i>
                     <h2>مجتمع الأصدقاء</h2>
-                    <p style="color:#888; font-size:0.9rem;">ادعُ الأصدقاء لفتح ميزة السحب وزيادة المكافآت</p>
+                    <p style="color:#888;">اربح مكافآت من نشاط أصدقائك</p>
                     <div style="background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-around;">
-                        <div><h3>{{ user.referrals }}</h3><small>إحالات</small></div>
-                        <div><h3>{{ (vipPlans[user.vip].refBonus * 100).toFixed(0) }}%</h3><small>عمولة</small></div>
+                        <div><h3>{{ user.referrals }}</h3><small>أصدقاء</small></div><div><h3>VIP {{ user.vip }}</h3><small>رتبتك</small></div>
                     </div>
                     <van-button block class="btn-main" @click="copyLink">نسخ رابط الدعوة</van-button>
                 </div>
+                <div class="card" v-if="refLogs.length > 0">
+                    <h3 style="margin-top:0">نشاط الفريق</h3>
+                    <div v-for="(log, i) in refLogs" :key="i" style="background:#222; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                        <div style="width:35px; height:35px; background:#333; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary);"><i class="ri-user-smile-line"></i></div>
+                        <div style="flex:1"><div style="font-weight:bold; color:white;">انضم صديق جديد</div><div style="font-size:0.85rem; color:#aaa;">باقة <span style="color:var(--primary)">{{ log.plan }}</span></div></div>
+                    </div>
+                </div>
             </div>
-
-            <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666">
-                <van-tabbar-item name="home" icon="home-smile-2-line">مكافآتي</van-tabbar-item>
-                <van-tabbar-item name="wallet" icon="wallet-3-line">أصولي</van-tabbar-item>
+            <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666" style="border-top: 1px solid #222;">
+                <van-tabbar-item name="home" icon="flashlight-fill">المهام</van-tabbar-item>
+                <van-tabbar-item name="wallet" icon="wallet-3-line">الأصول</van-tabbar-item>
                 <van-tabbar-item name="team" icon="team-line">المجتمع</van-tabbar-item>
             </van-tabbar>
         </div>
     </div>
-
     <script>
-        const IS_PROD = !['localhost', '127.0.0.1'].includes(location.hostname);
-        if (IS_PROD) { console.log = console.warn = console.error = () => {}; }
+        const { createApp, ref, onMounted, watch } = Vue;
+        const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", BOT_USERNAME: "TokenDrip_bot" };
+        const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto", BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200" };
+        const vipPlans = { 0:{name:"Free",price:0,dailyLimit:0,mineRate:0}, 1:{name:"Starter (VIP 1)",price:2,dailyLimit:1,mineRate:0.15}, 2:{name:"Bronze (VIP 2)",price:5,dailyLimit:2,mineRate:0.175}, 3:{name:"Silver (VIP 3)",price:10,dailyLimit:3,mineRate:0.21}, 4:{name:"Gold (VIP 4)",price:15,dailyLimit:4,mineRate:0.225}, 5:{name:"Platinum (VIP 5)",price:20,dailyLimit:5,mineRate:0.22}, 6:{name:"Diamond (VIP 6)",price:50,dailyLimit:6,mineRate:0.41} };
 
-        const { createApp, ref, onMounted } = Vue;
-        
-        const CONFIG = {
-            APP_VERSION: "v2.0.0",
-            SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev",
-            BOT: "TokenDrip_bot",
-            CACHE_KEY: "tokendrip_prod_v5",
-            MIN_REFS_TO_WITHDRAW: 5,
-            THROTTLE_MS: 1000
-        };
-
-        const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto" };
-
-        const app = createApp({
+        createApp({
             setup() {
-                const loading = ref(true);
-                const isSyncing = ref(true);
-                const activeTab = ref('home');
-                const walletTab = ref(0);
-                const isProcessing = ref(false);
-                const vipLoading = ref(null);
-                let lastActionTime = 0;
+                const loading = ref(true); const activeTab = ref('home'); const walletTab = ref(0); const isProcessing = ref(false); const vipLoading = ref(null);
+                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0 }); const logs = ref([]); const refLogs = ref([]);
+                const depAmount = ref(''); const depTxid = ref(''); const wAmt = ref(''); const wAddr = ref(''); const depositNetwork = ref('BEP20');
+                const fakeWithdraw = ref({ show: false, text: "", active: false });
+                const serverError = ref(false); // ✅ حالة الخطأ الجديدة
+                const tg = window.Telegram.WebApp; tg.expand();
 
-                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, transactions: [] });
-                const depAmount = ref('');
-                const depTxid = ref('');
-                const wAmt = ref('');
-                const wAddr = ref('');
-
-                // بيانات وهمية لشريط السحوبات
-                const fakeWithdrawals = ref([
-                    { user: 'User**92', amount: 55 },
-                    { user: 'Ali**01', amount: 120 },
-                    { user: 'Crypto**X', amount: 45 },
-                    { user: 'Moha**88', amount: 200 },
-                    { user: 'User**55', amount: 15 },
-                    { user: 'Sara**Q', amount: 80 }
-                ]);
-
-                const vipPlans = {
-                    0: { name: "Free", price: 0, dailyLimit: 0, mineRate: 0, refBonus: 0 },
-                    1: { name: "VIP 1 (Bronze)", price: 10, dailyLimit: 1, mineRate: 0.40, refBonus: 0.05 }, 
-                    2: { name: "VIP 2 (Silver)", price: 50, dailyLimit: 2, mineRate: 1.10, refBonus: 0.08 },
-                    3: { name: "VIP 3 (Gold)", price: 100, dailyLimit: 2, mineRate: 2.30, refBonus: 0.10 }
+                const api = async (action, payload = {}) => { 
+                    try { 
+                        const res = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) }); 
+                        return await res.json(); 
+                    } catch (e) { 
+                        serverError.value = true; // ✅ تفعيل شاشة الخطأ
+                        return { ok: false, error: "فشل الاتصال" }; 
+                    } 
                 };
+                
+                const refreshPage = () => window.location.reload();
 
-                const tg = window.Telegram.WebApp;
-                tg.expand();
-
-                const canProceed = () => {
-                    const now = Date.now();
-                    if (now - lastActionTime < CONFIG.THROTTLE_MS) return false;
-                    lastActionTime = now;
-                    return true;
-                };
-
-                const api = async (action, payload = {}) => {
-                    if (!navigator.onLine) { vant.showNotify({ type:'warning', message:'لا يوجد اتصال' }); return { ok: false }; }
-                    try {
-                        const res = await fetch(CONFIG.SERVER, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ initData: tg.initData, action, payload })
-                        });
-                        return await res.json();
-                    } catch (e) { return { ok: false, error: "خطأ اتصال" }; }
-                };
-
-                const refresh = async () => {
-                    const cached = localStorage.getItem(CONFIG.CACHE_KEY);
-                    if(cached) { user.value = JSON.parse(cached); loading.value = false; isSyncing.value = true; }
-                    const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') });
-                    if (data.ok) { 
-                        user.value = data.user; localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(data.user));
-                        loading.value = false; isSyncing.value = false;
-                    }
-                };
-
-                const handleCollect = async () => {
-                    if (!canProceed() || isSyncing.value || isProcessing.value) return;
-                    if (user.value.vip === 0) return vant.showToast('الترقية مطلوبة');
-                    if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) return vant.showToast('انتهت مهام اليوم');
-
-                    isProcessing.value = true;
-                    if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-                    const data = await api("mine");
-                    await new Promise(r => setTimeout(r, 600));
-
-                    if (data.ok) {
-                        user.value = data.user;
-                        localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(data.user));
-                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        vant.showToast({ message: 'تم الجمع +', icon: 'success' });
-                    } else { vant.showNotify({ type: 'warning', message: data.error }); }
-                    isProcessing.value = false;
-                };
-
-                const withdraw = async () => {
-                    if (!canProceed() || isSyncing.value) return;
-                    if (user.value.referrals < CONFIG.MIN_REFS_TO_WITHDRAW) return vant.showToast('الشروط غير مكتملة');
-                    if (Number(wAmt.value) < 5) return vant.showToast('الحد الأدنى 5$');
-                    if (!wAddr.value.startsWith('T') || wAddr.value.length < 30) return vant.showNotify('عنوان خاطئ');
-
-                    isProcessing.value = true;
-                    const data = await api("withdraw", { amount: Number(wAmt.value), wallet: wAddr.value });
-                    if (data.ok) { vant.showSuccessToast('تم الطلب'); user.value = data.user; wAmt.value = ''; } 
-                    else vant.showFailToast(data.error);
-                    isProcessing.value = false;
-                };
-
-                const submitDeposit = async () => {
-                    if (!canProceed()) return;
-                    if (Number(depAmount.value) < 10) return vant.showToast('أقل إيداع 10$');
-                    
-                    isProcessing.value = true;
-                    const data = await api("deposit", { amount: depAmount.value, txid: depTxid.value });
-                    if (data.ok) { vant.showSuccessToast('جاري المراجعة'); depAmount.value = ''; depTxid.value = ''; refresh(); } 
-                    else vant.showFailToast(data.error);
-                    isProcessing.value = false;
-                };
-
-                const buyVip = async (tier) => {
-                    if (!canProceed() || isSyncing.value) return;
-                    if(user.value.balance < vipPlans[tier].price) return vant.showToast('رصيدك غير كافٍ');
-                    vipLoading.value = tier;
-                    const data = await api("buy_vip", { tier });
-                    if (data.ok) {
-                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); 
-                        user.value = data.user; vant.showSuccessToast('تم التفعيل'); refresh(); 
-                    } else vant.showFailToast(data.error);
-                    vipLoading.value = null;
-                };
-
-                const copyAddress = () => { navigator.clipboard.writeText(WALLETS.TRC20); vant.showToast('تم النسخ'); };
-                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT}?startapp=${user.value.id}`); vant.showToast('تم النسخ'); };
+                const refresh = async () => { const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); if (data.ok) { user.value = data.user; loading.value = false; fetchLogs(); if(user.value.vip > 0 || user.value.mineCount > 0) startFakeBar(); } };
+                const fetchLogs = async () => { const data = await api("get_logs"); if (data.ok) { logs.value = data.logs; refLogs.value = data.refLogs; } };
+                
+                const handleCollect = async () => { if (user.value.vip === 0) return vant.showToast('يجب الترقية أولاً'); if (isProcessing.value) return; isProcessing.value = true; if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium'); const data = await api("mine"); if (data.ok) { user.value = data.user; vant.showSuccessToast('تم جمع المكافأة +'); fetchLogs(); startFakeBar(); } else vant.showNotify({ type: 'warning', message: data.error }); isProcessing.value = false; };
+                const withdraw = async () => { if (Number(wAmt.value) < 1) return vant.showToast('الحد الأدنى 1$'); isProcessing.value = true; const data = await api("withdraw", { amount: Number(wAmt.value), wallet: wAddr.value, network: "USDT" }); if (data.ok) { user.value = data.user; vant.showSuccessToast('تم إرسال الطلب'); wAmt.value = ''; fetchLogs(); } else vant.showNotify({ type: 'danger', message: data.error }); isProcessing.value = false; };
+                const submitDeposit = async () => { if (!depAmount.value || !depTxid.value) return vant.showToast('أدخل البيانات كاملة'); isProcessing.value = true; const data = await api("deposit", { amount: depAmount.value, txid: depTxid.value, network: depositNetwork.value }); if (data.ok) { vant.showSuccessToast('جاري المراجعة'); depAmount.value = ''; depTxid.value = ''; } else vant.showNotify({ type: 'danger', message: data.error }); isProcessing.value = false; };
+                const buyVip = async (tier) => { vipLoading.value = tier; const data = await api("buy_vip", { tier }); if (data.ok) { user.value = data.user; vant.showSuccessToast('مبروك الترقية! 🎉'); fetchLogs(); startFakeBar(); } else vant.showFailToast(data.error); vipLoading.value = null; };
+                
+                const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showSuccessToast({ message: 'تم نسخ العنوان', icon: 'success' }); };
+                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?startapp=${user.value.id}`); vant.showToast('تم نسخ الرابط'); };
                 const formatMoney = (v) => Number(v).toFixed(2);
+                const formatDate = (ts) => new Date(ts).toLocaleString();
+                const formatLogType = (t) => ({ mine: 'مكافأة مهام', deposit: 'إيداع', withdraw: 'سحب', upgrade: 'شراء باقة', refund: 'استرجاع', bonus: 'مكافأة صديق' }[t] || t);
+                const getStatusText = () => user.value.vip === 0 ? 'خطة مجانية (غير نشطة)' : (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit ? '✅ انتهت مهام اليوم' : 'اضغط للبدء');
                 
-                const getStatusText = () => {
-                    if(isSyncing.value) return '...';
-                    if(user.value.vip === 0) return 'اشترك أولاً';
-                    if(user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) return 'انتهى اليوم';
-                    return 'اضغط للجمع';
-                };
-
-                const getTierClass = (level) => {
-                    if(level == 1) return 'bronze-tier';
-                    if(level == 2) return 'silver-tier';
-                    if(level == 3) return 'gold-tier';
-                    return '';
-                }
-
-                onMounted(refresh);
+                const startFakeBar = () => { if(fakeWithdraw.value.active) return; fakeWithdraw.value.active = true; const names = ["Ali", "Saad", "User99", "Ahmed", "Moha", "Sara", "CryptoK", "MinerX"]; const showNotif = () => { const amt = (Math.random() * 46 + 2).toFixed(2); const name = names[Math.floor(Math.random() * names.length)]; fakeWithdraw.value.text = `تم سحب ${amt}$ بنجاح بواسطة ${name.substring(0, 3)}***`; fakeWithdraw.value.show = true; setTimeout(() => { fakeWithdraw.value.show = false; }, 4000); setTimeout(showNotif, Math.random() * 5000 + 5000); }; showNotif(); };
                 
-                return { 
-                    loading, isSyncing, activeTab, walletTab, user, vipPlans, CONFIG, WALLETS, 
-                    depAmount, depTxid, wAmt, wAddr, isProcessing, vipLoading, fakeWithdrawals,
-                    handleCollect, withdraw, submitDeposit, buyVip, copyAddress, copyLink, 
-                    formatMoney, getStatusText, getTierClass 
-                };
+                watch(activeTab, (newTab) => { if (newTab === 'wallet' || newTab === 'team') fetchLogs(); });
+                onMounted(() => { refresh(); });
+                return { loading, activeTab, walletTab, user, vipPlans, logs, refLogs, depAmount, depTxid, wAmt, wAddr, isProcessing, vipLoading, depositNetwork, fakeWithdraw, WALLETS, handleCollect, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, formatDate, formatLogType, getStatusText, serverError, refreshPage };
             }
         }).use(vant).mount("#app");
     </script>
