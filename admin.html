@@ -3,217 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenDrip Admin</title>
+    <title>TokenDrip Ops Center</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --bg-color: #0f0f0f; --card-bg: #1c1c1c; --primary: #00E676; --danger: #f44336; --warning: #FFC107; --text-color: #ffffff; --input-bg: #252525; --border: #333; }
+        :root { --bg-color: #0f0f0f; --card-bg: #1e1e1e; --primary: #00E676; --danger: #FF5252; --warning: #FFC107; --text-color: #ffffff; --border: #333; }
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding: 20px; padding-bottom: 80px; }
-        .header { text-align: center; margin-bottom: 30px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 1.4rem; color: var(--primary); }
+        .refresh-btn { background: #333; border: 1px solid #444; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .refresh-btn:active { transform: rotate(180deg); }
+
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
-        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem; margin-top: 10px;}
-        .input-group { display: flex; gap: 5px; }
-        .input-group input { border-radius: 8px 0 0 8px; margin-bottom: 5px; }
-        .input-group button { width: 50px; flex: none; border-radius: 0 8px 8px 0; margin-bottom: 5px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #333; color: white; }
-        input, select { width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid #444; border-radius: 8px; color: white; font-family: inherit; font-size: 1rem; margin-bottom: 5px; box-sizing: border-box; }
-        .btn-group { display: flex; gap: 15px; margin-top: 15px;}
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: inherit; transition: 0.2s; font-size: 1rem; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-approve { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,230,118,0.2); border: 1px solid var(--primary); }
-        .btn-reject { background: rgba(244,67,54,0.1); color: var(--danger); border: 1px solid var(--danger); box-shadow: 0 0 10px rgba(244,67,54,0.1); }
-        .btn-blue { background: #2196F3; color: white; width: 100%; margin-top: 15px;}
-        .btn-ban { background: #660000; color: white; border: 1px solid #ff0000; margin-top: 10px; }
-        .btn-unban { background: #333; color: white; border: 1px solid #555; margin-top: 10px; }
-        .btn-search { background: #FF9800; color: black; margin-top: 10px; width: 100%; }
-        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; mb-3; }
+        h3 { margin-top: 0; color: #fff; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.85rem; margin-top: 15px;}
+        input, select { width: 100%; padding: 12px; background: #252525; border: 1px solid #444; border-radius: 8px; color: white; font-family: inherit; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 1rem; transition: 0.2s; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); }
+        
+        .btn-search { background: #FF9800; color: black; width: 100%; margin-top: 10px; }
+        .btn-approve { background: var(--primary); color: #000; }
+        .btn-reject { background: rgba(255, 82, 82, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-ban { background: #660000; color: white; border: 1px solid #ff0000; }
+        .btn-unban { background: #333; color: white; border: 1px solid #555; }
+        .btn-blue { background: #2196F3; color: white; width: 100%; }
+
+        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-bottom: 10px;}
+        .status-active { background: rgba(0, 230, 118, 0.1); color: var(--primary); border: 1px solid var(--primary); }
+        .status-banned { background: rgba(255, 82, 82, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .status-review { background: rgba(255, 193, 7, 0.1); color: var(--warning); border: 1px solid var(--warning); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .macros-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .macro-btn { padding: 8px; font-size: 0.8rem; background: #333; color: #ccc; border: 1px solid #444; border-radius: 6px; text-align: center; }
+        .macro-btn:hover { background: #444; color: white; }
+
+        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); opacity: 0; transition: 0.5s; }
+        
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); opacity: 0; transition: 0.3s; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
-        #toast.success { background-color: var(--primary); color: black; }
-        #toast.error { background-color: var(--danger); }
-        #searchResult { margin-top: 10px; padding: 10px; background: #2a2a2a; border-radius: 6px; border: 1px dashed #555; display: none; }
-        .log-entry { font-size: 0.8rem; border-bottom: 1px solid #444; padding: 5px 0; display: flex; justify-content: space-between; }
+        
+        .log-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <div id="loader-overlay"><div class="spinner"></div><p style="margin-top: 15px;">جاري الاتصال...</p></div>
-    <div id="toast">تمت العملية!</div>
-    <div class="header"><h1>🛡️ Admin Panel</h1></div>
+    <div id="loader-overlay"><div class="spinner"></div><p style="margin-top: 15px; color:#888">Connecting...</p></div>
+    <div id="toast">Notification</div>
+
+    <div class="header">
+        <div>
+            <h1>🛡️ TokenDrip Ops</h1>
+            <span style="font-size:0.75rem; color:#666;">v3.0 Stable</span>
+        </div>
+        <div class="refresh-btn" onclick="refreshAll()" title="Refresh All"><i class="ri-refresh-line"></i></div>
+    </div>
     
     <div id="loginSection" style="display:none; text-align:center; padding:50px 0;">
-        <h2 style="color:var(--danger)">🔒 Access Locked</h2>
-        <p style="color:#aaa; margin-bottom:20px;">لم يتم التعرف على المعرف تلقائياً.<br>أدخل كلمة المرور للمتابعة.</p>
-        <input type="password" id="adminPass" placeholder="Password" style="text-align:center; font-size:1.2rem; margin-bottom:15px;">
-        <button class="btn-blue" onclick="checkPass()">Login</button>
-        <p id="debugId" style="margin-top:20px; font-size:0.8rem; color:#555;"></p>
+        <h2 style="color:var(--danger); margin-bottom:20px">🔒 Access Restricted</h2>
+        <input type="password" id="adminPass" placeholder="Enter Security Code" style="text-align:center; font-size:1.2rem; margin-bottom:15px; width: 80%;">
+        <button class="btn-blue" style="width: 80%;" onclick="checkPass()">Authenticate</button>
     </div>
 
     <div id="adminContent" style="display:none;">
-        <div class="card">
-            <h3>🔍 فحص مستخدم (Check User)</h3>
-            <input type="number" id="searchId" class="user-id-input" placeholder="User ID">
-            <button class="btn-search" onclick="fetchUserInfo()">بحث واستعلام</button>
-            <div id="searchResult"></div>
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="btn-ban" onclick="toggleBan(true)">🚫 حظر (Ban)</button>
-                <button class="btn-unban" onclick="toggleBan(false)">🔓 فك الحظر</button>
+        
+        <div class="card" style="border:1px dashed #444; background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h4 style="margin:0 0 5px; color:#aaa;">Global Stats</h4>
+                <div style="font-size:0.8rem; color:#666;">Check Pending & Liquidity</div>
             </div>
+            <button onclick="window.open('https://t.me/TokenDrip_bot')" style="width:auto; padding:8px 15px; background:#333; font-size:0.8rem;">Use /stats 🤖</button>
         </div>
 
         <div class="card">
-            <h3>⚡ معالجة المعاملات (Process TX)</h3>
+            <h3>🔍 تدقيق مستخدم (Audit)</h3>
+            <input type="number" id="searchId" class="user-id-input" placeholder="User ID / Telegram ID">
+            <button class="btn-search" onclick="fetchUserInfo()">جلب البيانات</button>
+            
+            <div id="searchResult" style="display:none; margin-top:15px; border-top:1px dashed #444; padding-top:15px;">
+                </div>
+        </div>
+
+        <div class="card">
+            <h3>⚡ معالجة (Process TX)</h3>
+            <div style="background:rgba(255,193,7,0.05); padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.8rem; color:#aaa; border:1px solid #333;">
+                ℹ️ الموافقة تعيد الحساب إلى <b>Active</b> تلقائياً.<br>
+                ℹ️ الرفض يعيد المبلغ للرصيد.
+            </div>
+            
             <label>User ID</label>
             <input type="number" id="targetId" class="user-id-input" placeholder="User ID">
-            <label>TX Reference</label>
-            <div class="input-group">
-                <input type="text" id="txRef" placeholder="dep_... | wd_...">
-                <button onclick="pasteToTxRef()">📋</button>
+            
+            <label>TX Reference (Ref)</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="txRef" placeholder="e.g. wd_170...">
+                <button style="width:50px; background:#333;" onclick="pasteToTxRef()">📋</button>
             </div>
+
             <div class="btn-group">
-                <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
-                <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض</button>
+                <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة (Approve)</button>
+                <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض (Reject)</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>🛠️ تعديل الرصيد/VIP</h3>
+            <h3>💬 ردود جاهزة (Macros)</h3>
+            <input type="text" id="macroInput" placeholder="اضغط لنسخ الرد..." readonly style="background:#111; color:var(--primary); font-size:0.9rem;">
+            <div class="macros-grid">
+                <button class="macro-btn" onclick="copyMacro('طلبك قيد المعالجة، يرجى الانتظار.')">⏳ قيد المعالجة</button>
+                <button class="macro-btn" onclick="copyMacro('تم التحويل بنجاح ✅')">✅ تم التحويل</button>
+                <button class="macro-btn" onclick="copyMacro('مرفوض: تأكد من عنوان المحفظة.')">❌ محفظة خاطئة</button>
+                <button class="macro-btn" onclick="copyMacro('مرفوض: TXID غير صحيح.')">❌ خطأ TXID</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛠️ تعديل يدوي (Admin Edit)</h3>
             <label>Target ID</label>
             <input type="number" id="manualId" class="user-id-input" placeholder="User ID">
-            <label>تعديل الرصيد</label>
-            <input type="number" id="manualBalance" placeholder="+ / -">
-            <label>تغيير مستوى VIP</label>
-            <select id="manualVip">
-                <option value="">-- لا تغيير --</option>
-                <option value="0">VIP 0</option>
-                <option value="1">VIP 1</option>
-                <option value="2">VIP 2</option>
-                <option value="3">VIP 3</option>
-                <option value="4">VIP 4</option>
-                <option value="5">VIP 5</option>
-                <option value="6">VIP 6</option>
-            </select>
-            <button class="btn-blue" onclick="manualUpdate()">💾 حفظ التعديلات</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                <input type="number" id="manualBalance" placeholder="Bal (+/-)">
+                <select id="manualVip">
+                    <option value="">VIP Level</option>
+                    <option value="0">Free</option>
+                    <option value="1">VIP 1</option>
+                    <option value="2">VIP 2</option>
+                    <option value="3">VIP 3</option>
+                    <option value="4">VIP 4</option>
+                    <option value="5">VIP 5</option>
+                </select>
+            </div>
+            <button class="btn-blue" style="margin-top:15px;" onclick="manualUpdate()">💾 حفظ التعديلات</button>
         </div>
     </div>
 
     <script>
-        // ⚠️ إعدادات السيرفر
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const ALLOWED_ADMIN_ID = 921301895;
-        const ADMIN_PASS = "123456"; // 🔐 كلمة مرور الطوارئ للدخول
+        // ✅ 1. تغيير كلمة المرور للأمان
+        const ADMIN_PASS = "Admin@Token2024"; 
 
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- نظام التحقق من الدخول ---
         window.onload = function() {
             const userId = tg.initDataUnsafe?.user?.id;
-            
-            // عرض الآيدي للمساعدة في التشخيص
-            document.getElementById('debugId').innerText = `Detected ID: ${userId || 'Hidden/Unknown'}`;
-
-            if (userId === ALLOWED_ADMIN_ID) {
-                showAdminPanel();
-            } else {
-                document.getElementById('loginSection').style.display = 'block';
-            }
-
+            if (userId === ALLOWED_ADMIN_ID) showAdminPanel();
+            else document.getElementById('loginSection').style.display = 'block';
             const lastId = localStorage.getItem('lastAdminUserId'); 
             if(lastId) document.querySelectorAll('.user-id-input').forEach(input => input.value = lastId); 
         };
 
-        function checkPass() {
-            const input = document.getElementById('adminPass').value;
-            if (input === ADMIN_PASS) {
-                showAdminPanel();
-            } else {
-                alert("كلمة المرور خاطئة!");
-            }
-        }
-
-        function showAdminPanel() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
-        }
-
-        // --- وظائف الأدمن ---
+        function checkPass() { if (document.getElementById('adminPass').value === ADMIN_PASS) showAdminPanel(); else alert("Access Denied"); }
+        function showAdminPanel() { document.getElementById('loginSection').style.display = 'none'; document.getElementById('adminContent').style.display = 'block'; }
+        
         function saveUserId(id) { if(id) { localStorage.setItem('lastAdminUserId', id); document.querySelectorAll('.user-id-input').forEach(input => input.value = id); } }
-        function setBusyState(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
-        function showToast(message, type = 'success') { const toast = document.getElementById("toast"); toast.className = "show " + type; toast.innerText = message; setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000); }
-        async function pasteToTxRef() { try { const text = await navigator.clipboard.readText(); document.getElementById('txRef').value = text; showToast("تم اللصق", "success"); } catch (err) { showToast("تعذر اللصق", "error"); } }
+        function setBusy(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
+        function toast(msg, type = 'success') { const t = document.getElementById("toast"); t.innerText = msg; t.style.background = type === 'error' ? '#FF5252' : '#00E676'; t.className = "show"; setTimeout(() => { t.className = ""; }, 3000); }
+        
+        // ✅ 2. زر التحديث الشامل
+        function refreshAll() {
+            const id = document.getElementById('searchId').value;
+            if(id) fetchUserInfo();
+            else location.reload();
+        }
 
-        async function api(action, payload) {
-            setBusyState(true);
+        async function pasteToTxRef() { try { const t = await navigator.clipboard.readText(); document.getElementById('txRef').value = t; toast("Paste OK"); } catch (e) { toast("Clipboard Error", "error"); } }
+        function copyMacro(txt) { navigator.clipboard.writeText(txt); document.getElementById('macroInput').value = txt; toast("Copied"); }
+
+        async function api(act, pl) {
+            setBusy(true);
             try {
-                const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) });
-                setBusyState(false);
-                return await res.json();
-            } catch (e) {
-                setBusyState(false);
-                showToast("Error: " + e.message, "error");
-                return { ok: false };
-            }
+                const r = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) });
+                setBusy(false);
+                return await r.json();
+            } catch (e) { setBusy(false); toast("Network Error", "error"); return { ok: false }; }
         }
 
         async function fetchUserInfo() {
             const id = document.getElementById('searchId').value;
-            if(!id) return showToast("أدخل المعرف", "error");
+            if(!id) return toast("Enter ID", "error");
             saveUserId(id);
-            const data = await api("admin_get_user", { targetUserId: id });
-            const resultBox = document.getElementById('searchResult');
+            const d = await api("admin_get_user", { targetUserId: id });
+            const box = document.getElementById('searchResult');
+            
+            if(d.ok && d.user) {
+                const u = d.user;
+                let badgeClass = 'status-active';
+                let badgeText = 'ACTIVE ✅';
+                // تحديد حالة الأزرار بناءً على حالة المستخدم
+                let banDisabled = false;
+                let unbanDisabled = true;
 
-            if(data.ok && data.user) {
-                let logsHtml = '';
-                if(data.user.logs && data.user.logs.length > 0) {
-                    logsHtml = `<div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;"><small style="color:#aaa">آخر النشاطات:</small>`;
-                    data.user.logs.slice(0, 5).forEach(l => { logsHtml += `<div class="log-entry"><span>${l.type}</span><span style="color:${l.amount>0?'#00E676':'#FF5252'}">${l.amount}$</span></div>`; });
-                    logsHtml += `</div>`;
+                if(u.isBanned || u.status === 'banned') { 
+                    badgeClass = 'status-banned'; badgeText = 'BANNED 🚫'; 
+                    banDisabled = true; unbanDisabled = false; // لا يمكن حظره لأنه محظور أصلاً
                 }
-                resultBox.style.display = "block";
-                resultBox.innerHTML = `<div style="font-size:0.9rem; line-height:1.6;">👤 <b>الاسم:</b> ${data.user.username || 'Unknown'}<br>💰 <b>الرصيد:</b> <span style="color:#00E676">${data.user.balance}$</span><br>💎 <b>VIP:</b> Level ${data.user.vip}<br>👥 <b>الإحالات:</b> ${data.user.referrals}<br>🚫 <b>محظور:</b> <span style="color:${data.user.isBanned ? 'red' : 'green'}">${data.user.isBanned ? 'نعم (BANNED)' : 'لا'}</span>${logsHtml}</div>`;
-                showToast("تم جلب البيانات", "success");
+                else if(u.status === 'review') { badgeClass = 'status-review'; badgeText = 'UNDER REVIEW ⚠️'; }
+
+                let logs = '';
+                if(u.logs && u.logs.length > 0) {
+                    u.logs.slice(0,5).forEach(l => {
+                        logs += `<div class="log-row"><span>${l.type}</span><span style="color:${l.amount>0?'#00E676':'#FF5252'}">${l.amount}$</span></div>`;
+                    });
+                }
+
+                box.style.display = "block";
+                box.innerHTML = `
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <span class="status-badge ${badgeClass}">${badgeText}</span>
+                    </div>
+                    <div style="font-size:0.9rem; line-height:1.8;">
+                        👤 <b>User:</b> ${u.username || 'N/A'} (<code>${u.id}</code>)<br>
+                        💰 <b>Balance:</b> <span style="color:var(--primary); font-size:1.1rem; font-weight:bold;">${u.balance}$</span><br>
+                        🏆 <b>VIP:</b> Level ${u.vip}<br>
+                        👥 <b>Refs:</b> ${u.referrals}<br>
+                        🎫 <b>Ticket:</b> ${u.supportTicket ? '<span style="color:var(--warning)">OPEN</span>' : 'None'}<br>
+                        🌐 <b>IP:</b> ${u.lastIP || 'Unknown'}
+                    </div>
+                    <div style="margin-top:15px; border-top:1px solid #333; pt-2">
+                        <small style="color:#aaa">Recent Activity:</small>
+                        ${logs}
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button class="btn-ban" onclick="toggleBan(true)" ${banDisabled ? 'disabled' : ''}>🚫 Ban</button>
+                        <button class="btn-unban" onclick="toggleBan(false)" ${unbanDisabled ? 'disabled' : ''}>🔓 Unban</button>
+                    </div>
+                `;
+                toast("Data Loaded");
             } else {
-                resultBox.style.display = "none";
-                showToast("المستخدم غير موجود", "error");
+                box.style.display = "none";
+                toast("User Not Found", "error");
             }
         }
 
-        async function toggleBan(isBanned) {
-            const id = document.getElementById('searchId').value;
-            if(!id) return showToast("أدخل المعرف في خانة البحث أولاً", "error");
-            if (!confirm(`⚠️ هل أنت متأكد من ${isBanned ? "حظر" : "فك حظر"} المستخدم ${id}؟`)) return;
-            const data = await api("admin_toggle_ban", { targetUserId: id, isBanned });
-            if(data.ok) { showToast(isBanned ? "تم الحظر 🚫" : "تم فك الحظر 🔓", "success"); fetchUserInfo(); }
-            else showToast("فشل: " + data.error, "error");
+        async function updateStatus(st) {
+            const id = document.getElementById('targetId').value;
+            const ref = document.getElementById('txRef').value;
+            if(!id || !ref) return toast("Missing Data", "error");
+            if(!confirm(st === 'approved' ? "Confirm APPROVE?" : "Confirm REJECT?")) return;
+            
+            saveUserId(id);
+            const d = await api("admin_update_status", { targetUserId: id, txRef: ref, status: st });
+            if(d.ok) { 
+                toast(st === 'approved' ? "Approved ✅" : "Rejected ❌"); 
+                document.getElementById('txRef').value = '';
+                if(document.getElementById('searchId').value == id) fetchUserInfo(); // تحديث تلقائي
+            } else { toast(d.error, "error"); }
         }
 
-        async function updateStatus(status) {
-            const targetId = document.getElementById('targetId').value.trim();
-            const txRef = document.getElementById('txRef').value.trim();
-            if (!targetId || !txRef) return showToast("بيانات ناقصة", "error");
-            if (!confirm(status === 'approved' ? "⚠️ هل أنت متأكد من الموافقة؟" : "⚠️ هل أنت متأكد من الرفض؟")) return;
-            saveUserId(targetId);
-            const data = await api("admin_update_status", { targetUserId: targetId, txRef, status });
-            if (data.ok) { showToast(status === 'approved' ? "تمت الموافقة ✅" : "تم الرفض ❌", status === 'approved' ? 'success' : 'error'); document.getElementById('txRef').value = ''; }
-            else { showToast("فشل: " + data.error, "error"); }
+        async function toggleBan(state) {
+            const id = document.getElementById('searchId').value;
+            if(!id) return toast("Search User First", "error");
+            if(!confirm(`Confirm ${state ? "BAN" : "UNBAN"}?`)) return;
+            const d = await api("admin_toggle_ban", { targetUserId: id, isBanned: state });
+            if(d.ok) { toast("Success"); fetchUserInfo(); } else { toast(d.error, "error"); }
         }
 
         async function manualUpdate() {
-            const targetId = document.getElementById('manualId').value.trim();
-            const balanceInput = document.getElementById('manualBalance').value;
-            const vipInput = document.getElementById('manualVip').value;
-            if (!targetId) return showToast("حدد المستخدم", "error");
-            let payload = { targetUserId: targetId };
-            if (balanceInput !== "") payload.manualBalance = parseFloat(balanceInput);
-            if (vipInput !== "") payload.manualVip = parseInt(vipInput);
-            if (Object.keys(payload).length === 1) return showToast("لم تقم بأي تعديل", "warning");
-            if (!confirm(`⚠️ تحذير أمني:\nهل أنت متأكد من تعديل بيانات ${targetId} يدوياً؟`)) return;
-            saveUserId(targetId);
-            const data = await api("admin_manual_edit", payload);
-            if (data.ok) { showToast("تم الحفظ ✅", "success"); document.getElementById('manualBalance').value = ''; document.getElementById('manualVip').value = ''; }
-            else { showToast("خطأ: " + data.error, "error"); }
+            const id = document.getElementById('manualId').value;
+            const bal = document.getElementById('manualBalance').value;
+            const vip = document.getElementById('manualVip').value;
+            if(!id) return toast("Target ID Required", "error");
+            
+            let payload = { targetUserId: id };
+            if(bal) payload.manualBalance = parseFloat(bal);
+            if(vip) payload.manualVip = parseInt(vip);
+            
+            if(!confirm("⚠️ Confirm Manual Edit?")) return;
+            const d = await api("admin_manual_edit", payload);
+            if(d.ok) { toast("Saved ✅"); document.getElementById('manualBalance').value=''; } else { toast(d.error, "error"); }
         }
     </script>
 </body>
