@@ -44,7 +44,6 @@
             filter: grayscale(100%); opacity: 0.8; cursor: not-allowed; pointer-events: none; 
         }
         
-        /* تنسيق العداد */
         .timer-display { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #888; letter-spacing: 2px; margin: 5px 0; }
         
         .van-popup, .van-dialog, .van-toast { background: var(--card-bg) !important; color: white !important; }
@@ -71,6 +70,10 @@
         .footer-note { font-size: 0.7rem; color: #444; text-align: center; padding: 20px; line-height: 1.4; }
         .wallet-box { background: #111; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; border: 1px solid #333; transition: 0.3s; }
         .van-field__label { color: #aaa !important; } .van-field__control { color: white !important; } .van-cell { background: transparent !important; }
+        
+        /* إصلاح ألوان Dialog */
+        .van-dialog__confirm { color: var(--primary) !important; }
+        .van-dialog__cancel { color: #888 !important; }
     </style>
 </head>
 <body>
@@ -82,12 +85,17 @@
             <van-button size="small" type="primary" @click="refreshPage">تحديث الصفحة</van-button>
         </div>
 
-        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }"><i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span></div>
+        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }">
+            <i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span>
+        </div>
+
         <div class="top-icons"><div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? '🇬🇧' : '🇸🇦' }}</div></div>
         <div class="float-support" @click="showSupport = true"><i class="ri-customer-service-2-fill"></i></div>
 
-        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;"><van-loading color="#00E676" vertical>جاري التحميل...</van-loading></div>
-        
+        <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
+             <van-loading color="#00E676" vertical>جاري التحميل...</van-loading>
+        </div>
+
         <div v-else style="padding-top: 30px;">
             <div v-if="activeTab === 'home'">
                 <div class="card" style="text-align: center; margin-top: 20px;">
@@ -109,9 +117,7 @@
                     </div>
                 </div>
                 
-                <div style="text-align: center; font-size: 0.75rem; color: #666; margin-top: -15px; margin-bottom: 20px;">
-                    * الأرباح تعتمد على الالتزام بالخطة النشطة
-                </div>
+                <div style="text-align: center; font-size: 0.75rem; color: #666; margin-top: -15px; margin-bottom: 20px;">* الأرباح تعتمد على الالتزام بالخطة النشطة</div>
 
                 <div v-if="!inGroup" class="card" style="background: rgba(255, 193, 7, 0.1); border-color: var(--warning); text-align: center;">
                     <div style="color: var(--warning); margin-bottom: 10px;"><i class="ri-alarm-warning-fill"></i> {{ t[lang].groupAlert }}</div>
@@ -120,7 +126,6 @@
 
                 <div class="vip-scroll-container">
                     <div v-for="(plan, level) in vipPlans" :key="level" v-show="level > 0" class="vip-card" :class="{ 'active-plan': user.vip === Number(level) }">
-                        <div style="position:absolute; top:10px; right:10px; font-size:1.5rem; opacity:0.2; font-weight:800; color:white;">{{ level }}</div>
                         <div style="text-align: center;"><h3 style="margin: 5px 0; color:white;">{{ plan.name }}</h3><div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div></div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
                             <div>{{ t[lang].daily }}: <span style="color:white">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
@@ -248,61 +253,33 @@
                 const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { serverError.value = true; return { ok: false, error: "Connection Error" }; } };
                 const refreshPage = () => window.location.reload();
                 
-                // ✅ وظيفة العداد التنازلي
                 const startTimer = () => {
                     if(timerInterval) clearInterval(timerInterval);
                     const updateTimer = () => {
                         const now = new Date();
                         const tomorrow = new Date(now);
-                        // نضبط التوقيت لنهاية اليوم الحالي (منتصف الليل UTC)
                         tomorrow.setUTCHours(24, 0, 0, 0); 
                         const diff = tomorrow - now;
-
-                        if (diff <= 0) {
-                            timeLeft.value = '';
-                            clearInterval(timerInterval);
-                            refresh(); // تحديث البيانات عند انتهاء الوقت
-                        } else {
-                            const h = Math.floor(diff / 3600000);
-                            const m = Math.floor((diff % 3600000) / 60000);
-                            const s = Math.floor((diff % 60000) / 1000);
-                            timeLeft.value = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                        }
+                        if (diff <= 0) { timeLeft.value = ''; clearInterval(timerInterval); refresh(); } 
+                        else { const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000); timeLeft.value = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
                     };
-                    updateTimer(); // تشغيل فوري
-                    timerInterval = setInterval(updateTimer, 1000);
+                    updateTimer(); timerInterval = setInterval(updateTimer, 1000);
                 };
 
                 const refresh = async () => { 
                     const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); 
                     if (data.ok) { 
-                        user.value = data.user; 
-                        inGroup.value = data.inGroup; 
-                        loading.value = false; 
-                        if(user.value.vip > 0) startFakeBar(); 
-                        fetchLogs(); 
-                        
-                        // تشغيل العداد إذا انتهت المهام
-                        if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) {
-                            startTimer();
-                        } else {
-                            timeLeft.value = ''; // إعادة تعيين
-                        }
+                        user.value = data.user; inGroup.value = data.inGroup; loading.value = false; if(user.value.vip > 0) startFakeBar(); fetchLogs(); 
+                        if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); else timeLeft.value = '';
                     } 
                 };
                 
                 const fetchLogs = async () => { const data = await api("get_logs"); if (data.ok) { refLogs.value = data.refLogs; } };
 
                 const handleCollect = async () => { 
-                    if(timeLeft.value !== '') return; // منع الضغط إذا العداد يعمل
+                    if(timeLeft.value !== '') return;
                     const data = await api("mine"); 
-                    if (data.ok) { 
-                        user.value = data.user; 
-                        vant.showSuccessToast(lang.value === 'ar' ? '+ تم إضافة الربح' : '+ Profit Added'); 
-                        startFakeBar(); 
-                        // بدء العداد فوراً بعد الجمع
-                        if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer();
-                    } else vant.showNotify({ type: 'warning', message: data.error }); 
+                    if (data.ok) { user.value = data.user; vant.showSuccessToast(lang.value === 'ar' ? '+ تم إضافة الربح' : '+ Profit Added'); startFakeBar(); if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); } else vant.showNotify({ type: 'warning', message: data.error }); 
                 };
                 
                 const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set ✅'); } };
@@ -311,20 +288,23 @@
                     if (!wAddr.value || wAddr.value.length < 20) return vant.showToast(lang.value === 'ar' ? '⚠️ عنوان المحفظة قصير' : '⚠️ Address too short');
                     const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
                     if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
-                    else {
-                        const err = data.error || "Error";
-                        if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System")) vant.showDialog({ title: '⚠️ Note', message: err });
-                        else vant.showNotify({ type: 'danger', message: err });
-                    }
+                    else { const err = data.error || "Error"; if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System")) vant.showDialog({ title: '⚠️ Note', message: err }); else vant.showNotify({ type: 'danger', message: err }); }
                 };
 
                 const sendSupport = async () => { if(!supportMsg.value) return; await api("support", { msg: supportMsg.value }); showSupport.value = false; supportMsg.value = ''; vant.showSuccessToast('Message Sent'); };
                 const submitDeposit = async () => { const d = await api("deposit", { amount: depAmount.value, txid: depTxid.value, network: depositNetwork.value }); if(d.ok) { vant.showSuccessToast('Reviewing...'); depAmount.value=''; depTxid.value=''; } };
                 
+                // ✅ حل مشكلة اللغة الصينية
                 const buyVip = (t) => {
                     const plan = vipPlans[t];
                     const msg = lang.value === 'ar' ? `هل أنت متأكد من تفعيل ${plan.name} بسعر ${plan.price}$؟` : `Confirm upgrade to ${plan.name} for $${plan.price}?`;
-                    vant.showConfirmDialog({ title: 'Upgrade', message: msg }).then(async () => {
+                    // تخصيص أزرار التأكيد والإلغاء
+                    vant.showConfirmDialog({ 
+                        title: 'Upgrade', 
+                        message: msg,
+                        confirmButtonText: lang.value === 'ar' ? 'موافق' : 'Confirm',
+                        cancelButtonText: lang.value === 'ar' ? 'إلغاء' : 'Cancel'
+                    }).then(async () => {
                         vipLoading.value = t;
                         const d = await api("buy_vip", { tier: t });
                         if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } else vant.showFailToast(d.error);
@@ -342,12 +322,9 @@
                     if(fakeWithdraw.value.active) return; fakeWithdraw.value.active = true;
                     const names = ["Ali", "Saad", "User99", "Ahmed", "Moha", "Sara", "Crypto", "Miner"];
                     const run = () => {
-                        const amt = (Math.random() * 14 + 1).toFixed(2);
-                        const name = names[Math.floor(Math.random()*names.length)];
+                        const amt = (Math.random() * 14 + 1).toFixed(2); const name = names[Math.floor(Math.random()*names.length)];
                         fakeWithdraw.value.text = lang.value === 'ar' ? `✅ تم سحب ${amt}$ بنجاح بواسطة ${name}***` : `✅ ${name}*** successfully withdrew $${amt}`;
-                        fakeWithdraw.value.show = true;
-                        setTimeout(() => { fakeWithdraw.value.show = false; }, 4000);
-                        setTimeout(run, Math.random() * 5000 + 5000);
+                        fakeWithdraw.value.show = true; setTimeout(() => { fakeWithdraw.value.show = false; }, 4000); setTimeout(run, Math.random() * 5000 + 5000);
                     }; run();
                 };
 
