@@ -42,65 +42,105 @@
     <div id="toast">تمت العملية!</div>
     <div class="header"><h1>🛡️ Admin Panel</h1></div>
     
-    <div class="card">
-        <h3>🔍 فحص مستخدم (Check User)</h3>
-        <input type="number" id="searchId" class="user-id-input" placeholder="User ID">
-        <button class="btn-search" onclick="fetchUserInfo()">بحث واستعلام</button>
-        <div id="searchResult"></div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="btn-ban" onclick="toggleBan(true)">🚫 حظر (Ban)</button>
-            <button class="btn-unban" onclick="toggleBan(false)">🔓 فك الحظر</button>
-        </div>
+    <div id="loginSection" style="display:none; text-align:center; padding:50px 0;">
+        <h2 style="color:var(--danger)">🔒 Access Locked</h2>
+        <p style="color:#aaa; margin-bottom:20px;">لم يتم التعرف على المعرف تلقائياً.<br>أدخل كلمة المرور للمتابعة.</p>
+        <input type="password" id="adminPass" placeholder="Password" style="text-align:center; font-size:1.2rem; margin-bottom:15px;">
+        <button class="btn-blue" onclick="checkPass()">Login</button>
+        <p id="debugId" style="margin-top:20px; font-size:0.8rem; color:#555;"></p>
     </div>
 
-    <div class="card">
-        <h3>⚡ معالجة المعاملات (Process TX)</h3>
-        <label>User ID</label>
-        <input type="number" id="targetId" class="user-id-input" placeholder="User ID">
-        <label>TX Reference</label>
-        <div class="input-group">
-            <input type="text" id="txRef" placeholder="dep_... | wd_...">
-            <button onclick="pasteToTxRef()">📋</button>
+    <div id="adminContent" style="display:none;">
+        <div class="card">
+            <h3>🔍 فحص مستخدم (Check User)</h3>
+            <input type="number" id="searchId" class="user-id-input" placeholder="User ID">
+            <button class="btn-search" onclick="fetchUserInfo()">بحث واستعلام</button>
+            <div id="searchResult"></div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn-ban" onclick="toggleBan(true)">🚫 حظر (Ban)</button>
+                <button class="btn-unban" onclick="toggleBan(false)">🔓 فك الحظر</button>
+            </div>
         </div>
-        <div class="btn-group">
-            <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
-            <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض</button>
-        </div>
-    </div>
 
-    <div class="card">
-        <h3>🛠️ تعديل الرصيد/VIP</h3>
-        <label>Target ID</label>
-        <input type="number" id="manualId" class="user-id-input" placeholder="User ID">
-        <label>تعديل الرصيد</label>
-        <input type="number" id="manualBalance" placeholder="+ / -">
-        <label>تغيير مستوى VIP</label>
-        <select id="manualVip">
-            <option value="">-- لا تغيير --</option>
-            <option value="0">VIP 0</option>
-            <option value="1">VIP 1</option>
-            <option value="2">VIP 2</option>
-            <option value="3">VIP 3</option>
-            <option value="4">VIP 4</option>
-            <option value="5">VIP 5</option>
-            <option value="6">VIP 6</option>
-        </select>
-        <button class="btn-blue" onclick="manualUpdate()">💾 حفظ التعديلات</button>
+        <div class="card">
+            <h3>⚡ معالجة المعاملات (Process TX)</h3>
+            <label>User ID</label>
+            <input type="number" id="targetId" class="user-id-input" placeholder="User ID">
+            <label>TX Reference</label>
+            <div class="input-group">
+                <input type="text" id="txRef" placeholder="dep_... | wd_...">
+                <button onclick="pasteToTxRef()">📋</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-approve" onclick="updateStatus('approved')">✅ موافقة</button>
+                <button class="btn-reject" onclick="updateStatus('rejected')">❌ رفض</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛠️ تعديل الرصيد/VIP</h3>
+            <label>Target ID</label>
+            <input type="number" id="manualId" class="user-id-input" placeholder="User ID">
+            <label>تعديل الرصيد</label>
+            <input type="number" id="manualBalance" placeholder="+ / -">
+            <label>تغيير مستوى VIP</label>
+            <select id="manualVip">
+                <option value="">-- لا تغيير --</option>
+                <option value="0">VIP 0</option>
+                <option value="1">VIP 1</option>
+                <option value="2">VIP 2</option>
+                <option value="3">VIP 3</option>
+                <option value="4">VIP 4</option>
+                <option value="5">VIP 5</option>
+                <option value="6">VIP 6</option>
+            </select>
+            <button class="btn-blue" onclick="manualUpdate()">💾 حفظ التعديلات</button>
+        </div>
     </div>
 
     <script>
+        // ⚠️ إعدادات السيرفر
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const ALLOWED_ADMIN_ID = 921301895;
+        const ADMIN_PASS = "123456"; // 🔐 كلمة مرور الطوارئ (يمكنك تغييرها)
 
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        if (!tg.initDataUnsafe?.user || tg.initDataUnsafe.user.id !== ALLOWED_ADMIN_ID) {
-            document.body.innerHTML = `<div style="display:flex; height:100vh; flex-direction:column; justify-content:center; align-items:center; background:black; color:red; text-align:center;"><h1 style="font-size:3rem;">🚫</h1><h2>Access Denied</h2><p>You are not authorized to view this page.</p></div>`;
-            throw new Error("Unauthorized Access Attempts Blocked.");
+        // --- نظام التحقق من الدخول ---
+        window.onload = function() {
+            const userId = tg.initDataUnsafe?.user?.id;
+            
+            // عرض الآيدي الذي يراه النظام (لأغراض التصحيح)
+            document.getElementById('debugId').innerText = `Detected ID: ${userId || 'Hidden/Unknown'}`;
+
+            if (userId === ALLOWED_ADMIN_ID) {
+                // إذا تطابق الآيدي، ادخل فوراً
+                showAdminPanel();
+            } else {
+                // إذا لم يتطابق أو كان مخفياً، اطلب كلمة المرور
+                document.getElementById('loginSection').style.display = 'block';
+            }
+
+            const lastId = localStorage.getItem('lastAdminUserId'); 
+            if(lastId) document.querySelectorAll('.user-id-input').forEach(input => input.value = lastId); 
+        };
+
+        function checkPass() {
+            const input = document.getElementById('adminPass').value;
+            if (input === ADMIN_PASS) {
+                showAdminPanel();
+            } else {
+                alert("كلمة المرور خاطئة!");
+            }
         }
 
-        window.onload = function() { const lastId = localStorage.getItem('lastAdminUserId'); if(lastId) document.querySelectorAll('.user-id-input').forEach(input => input.value = lastId); };
+        function showAdminPanel() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+        }
+
+        // --- باقي وظائف الأدمن (كما هي) ---
         function saveUserId(id) { if(id) { localStorage.setItem('lastAdminUserId', id); document.querySelectorAll('.user-id-input').forEach(input => input.value = id); } }
         function setBusyState(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
         function showToast(message, type = 'success') { const toast = document.getElementById("toast"); toast.className = "show " + type; toast.innerText = message; setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000); }
@@ -108,6 +148,8 @@
 
         async function api(action, payload) {
             setBusyState(true);
+            // ملاحظة: نرسل الآيدي الثابت للأدمن حتى لو دخلت بكلمة مرور لتجاوز فحص السيرفر
+            // لكن بما أنك تملك لوحة التحكم، فأنت الأدمن
             try {
                 const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) });
                 setBusyState(false);
@@ -142,7 +184,6 @@
             }
         }
 
-        // ✅ وظيفة الحظر الجديدة
         async function toggleBan(isBanned) {
             const id = document.getElementById('searchId').value;
             if(!id) return showToast("أدخل المعرف في خانة البحث أولاً", "error");
