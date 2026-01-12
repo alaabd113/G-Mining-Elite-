@@ -102,7 +102,7 @@
         // ⚠️ إعدادات السيرفر
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const ALLOWED_ADMIN_ID = 921301895;
-        const ADMIN_PASS = "123456"; // 🔐 كلمة مرور الطوارئ (يمكنك تغييرها)
+        const ADMIN_PASS = "123456"; // 🔐 كلمة مرور الطوارئ للدخول
 
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -111,14 +111,12 @@
         window.onload = function() {
             const userId = tg.initDataUnsafe?.user?.id;
             
-            // عرض الآيدي الذي يراه النظام (لأغراض التصحيح)
+            // عرض الآيدي للمساعدة في التشخيص
             document.getElementById('debugId').innerText = `Detected ID: ${userId || 'Hidden/Unknown'}`;
 
             if (userId === ALLOWED_ADMIN_ID) {
-                // إذا تطابق الآيدي، ادخل فوراً
                 showAdminPanel();
             } else {
-                // إذا لم يتطابق أو كان مخفياً، اطلب كلمة المرور
                 document.getElementById('loginSection').style.display = 'block';
             }
 
@@ -140,7 +138,7 @@
             document.getElementById('adminContent').style.display = 'block';
         }
 
-        // --- باقي وظائف الأدمن (كما هي) ---
+        // --- وظائف الأدمن ---
         function saveUserId(id) { if(id) { localStorage.setItem('lastAdminUserId', id); document.querySelectorAll('.user-id-input').forEach(input => input.value = id); } }
         function setBusyState(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
         function showToast(message, type = 'success') { const toast = document.getElementById("toast"); toast.className = "show " + type; toast.innerText = message; setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000); }
@@ -148,8 +146,6 @@
 
         async function api(action, payload) {
             setBusyState(true);
-            // ملاحظة: نرسل الآيدي الثابت للأدمن حتى لو دخلت بكلمة مرور لتجاوز فحص السيرفر
-            // لكن بما أنك تملك لوحة التحكم، فأنت الأدمن
             try {
                 const res = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action, payload }) });
                 setBusyState(false);
