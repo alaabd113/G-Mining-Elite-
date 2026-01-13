@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TokenDrip Rewards</title> <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>TokenDrip Rewards</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/vant@4/lib/vant.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/vant@4/lib/index.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -11,24 +13,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --bg-color: #0f0f0f; --card-bg: #1c1c1c; 
-            --primary: #00E676; --primary-dark: #00C853;
-            --text-color: #ffffff; --text-sec: #888;
-            --danger: #FF5252; --warning: #FFC107;
-        }
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        :root { --bg-color: #0f0f0f; --card-bg: #1c1c1c; --primary: #00E676; --text-color: #ffffff; --danger: #FF5252; --warning: #FFC107; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        .fake-bar {
-            position: fixed; top: 0; left: 0; width: 100%; height: 30px;
-            background: rgba(0, 230, 118, 0.1); border-bottom: 1px solid rgba(0, 230, 118, 0.2);
-            z-index: 1000; display: flex; align-items: center; justify-content: center;
-            font-size: 0.75rem; color: var(--primary); backdrop-filter: blur(5px);
-            transform: translateY(-100%); transition: transform 0.5s ease;
-        }
-        .fake-bar.visible { transform: translateY(0); }
-        .fake-bar i { margin-left: 5px; margin-right: 5px; }
-        
+        /* زر التعدين الدائري التفاعلي */
         .harvest-circle { 
             width: 190px; height: 190px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(0,230,118,0.1) 0%, rgba(0,0,0,0) 70%); 
@@ -39,98 +27,65 @@
         .harvest-circle:active { transform: scale(0.95); }
         .harvest-circle.disabled { 
             border-color: #444; background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%);
-            filter: grayscale(100%); opacity: 0.8; cursor: not-allowed; pointer-events: none; 
+            filter: grayscale(100%); opacity: 0.7; cursor: not-allowed; pointer-events: none; 
         }
-        
-        .timer-display { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #888; letter-spacing: 2px; margin: 5px 0; }
-        
-        .van-popup, .van-dialog, .van-toast { background: var(--card-bg) !important; color: white !important; }
-        .van-cell { background: transparent; color: white; padding: 10px 0; }
+        .spinner-border {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%; border: 4px solid transparent;
+            border-top-color: var(--primary); 
+            animation: spin 1s linear infinite; display: none;
+        }
+        .harvest-circle.loading .spinner-border { display: block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        
-        .vip-scroll-container { display: flex; gap: 15px; overflow-x: auto; padding: 10px 15px; scrollbar-width: none; }
-        .vip-card { min-width: 260px; background: linear-gradient(145deg, #252525, #1a1a1a); border-radius: 16px; padding: 20px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-        .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.15); }
-        
-        .btn-main { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); border: none; color: black; font-weight: bold; width: 100%; border-radius: 8px; height: 44px; margin-top: 10px; }
+        .btn-main { background: linear-gradient(90deg, var(--primary), #00C853); border: none; color: black; font-weight: bold; width: 100%; border-radius: 8px; height: 44px; margin-top: 10px; }
         .van-tabbar { background-color: #161616; border-top: 1px solid #333; }
         
-        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; font-size: 0.9rem; }
-        .log-date { font-size: 0.75rem; color: #666; display: block; margin-top: 2px; }
-        .amount-pos { color: var(--primary); font-weight: bold; text-align: left; } 
-        .amount-neg { color: var(--danger); font-weight: bold; text-align: left; }
-        
-        .top-icons { position: absolute; top: 40px; right: 15px; z-index: 100; display: flex; gap: 10px; }
-        .icon-btn { background: rgba(255,255,255,0.1); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; }
-        .float-support { position: fixed; bottom: 80px; right: 20px; width: 50px; height: 50px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: black; box-shadow: 0 4px 15px rgba(0,230,118,0.4); z-index: 999; cursor: pointer; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        
-        .error-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-        .footer-note { font-size: 0.7rem; color: #444; text-align: center; padding: 10px; line-height: 1.4; margin-top: 20px; }
-        .wallet-box { background: #111; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; border: 1px solid #333; transition: 0.3s; }
-        .van-field__label { color: #aaa !important; } .van-field__control { color: white !important; } .van-cell { background: transparent !important; }
-        .van-dialog__confirm { color: var(--primary) !important; } .van-dialog__cancel { color: #888 !important; }
-        
-        .badge-status { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #333; margin-left: 5px; }
-        .status-box { background: #222; border-radius: 8px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        .vip-scroll-container { display: flex; gap: 15px; overflow-x: auto; padding: 10px 15px; scrollbar-width: none; }
+        .vip-card { min-width: 260px; background: linear-gradient(145deg, #252525, #1a1a1a); border-radius: 16px; padding: 20px; border: 1px solid #333; }
+        .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.15); }
+
+        .task-row { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
     </style>
 </head>
 <body>
     <div id="app" v-cloak>
-        <div v-if="serverError" class="error-overlay">
-            <i class="ri-wifi-off-line" style="font-size: 4rem; color: var(--text-sec); margin-bottom: 20px;"></i>
-            <h3>الخدمة غير متاحة حالياً</h3>
-            <p style="color: #666;">يرجى التحقق من اتصالك أو المحاولة لاحقاً</p>
-            <van-button size="small" type="primary" @click="refreshPage">تحديث الصفحة</van-button>
-        </div>
-
-        <div class="fake-bar" :class="{ visible: fakeWithdraw.show }">
-            <i class="ri-checkbox-circle-fill"></i><span>{{ fakeWithdraw.text }}</span>
-        </div>
-
-        <div class="top-icons"><div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? '🇬🇧' : '🇸🇦' }}</div></div>
-        <div class="float-support" @click="showSupport = true"><i class="ri-customer-service-2-fill"></i></div>
-
         <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-             <van-loading color="#00E676" vertical>جاري التحميل...</van-loading>
+             <van-loading color="#00E676" vertical>Loading...</van-loading>
         </div>
 
-        <div v-else style="padding-top: 30px;">
+        <div v-else style="padding-top: 20px;">
             <div v-if="activeTab === 'home'">
-                <div class="card" style="text-align: center; margin-top: 20px;">
-                    <span style="color: var(--text-sec); font-size: 0.9rem;">{{ t[lang].balance }}</span>
+                <div class="card" style="text-align: center;">
+                    <span style="color: #888;">Total Balance</span>
                     <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 5px 0;">${{ formatMoney(user.balance) }}</div>
                     <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
                 </div>
-                
-                <div class="card" style="border:1px dashed #00E676; background:rgba(0,230,118,0.05); text-align:center;">
-                    <h3 style="margin:0 0 5px; font-size:1rem; color:var(--primary);">🚀 Limited Campaign</h3>
-                    <p style="font-size:0.75rem; color:#aaa; margin:0; line-height:1.4;">
-                        {{ lang === 'ar' ? 'حملة الوصول المبكر للمكافآت.' : 'Early access reward campaign.' }}<br>
-                        {{ lang === 'ar' ? 'تعتمد المعالجة على سعة النظام.' : 'Processing depends on system capacity.' }}
-                    </p>
-                </div>
 
-                <div class="harvest-circle" :class="{ disabled: user.vip === 0 || timeLeft !== '' }" @click="handleCollect">
+                <div class="harvest-circle" :class="{ disabled: isMiningDisabled, loading: isProcessing }" @click="handleCollect">
+                    <div class="spinner-border"></div>
                     <div v-if="timeLeft === ''">
                         <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
-                        <h3 style="margin: 5px 0; color: white;">{{ t[lang].doTask }}</h3>
-                        <span style="font-size: 0.85rem; color: #aaa;">{{ getStatusText() }}</span>
+                        <h3 style="margin: 5px 0; color: white;">Start Task</h3>
+                        <span style="font-size: 0.85rem; color: #aaa;">Click to Earn</span>
                     </div>
                     <div v-else>
                         <i class="ri-time-line" style="font-size: 3rem; color: #666;"></i>
-                        <div class="timer-display">{{ timeLeft }}</div>
-                        <span style="font-size: 0.75rem; color: #666;">Next Session</span>
+                        <div style="font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #888;">{{ timeLeft }}</div>
+                        <span style="font-size: 0.75rem; color: #666;">Reset Timer</span>
                     </div>
                 </div>
-                
-                <div style="text-align: center; font-size: 0.75rem; color: #666; margin-top: -15px; margin-bottom: 20px;">
-                    {{ lang === 'ar' ? '* المكافآت تعتمد على إكمال الجلسة اليومية' : '* Rewards depend on completing daily session' }}
-                </div>
 
-                <div v-if="!inGroup" class="card" style="background: rgba(255, 193, 7, 0.1); border-color: var(--warning); text-align: center;">
-                    <div style="color: var(--warning); margin-bottom: 10px;"><i class="ri-alarm-warning-fill"></i> {{ t[lang].groupAlert }}</div>
-                    <a :href="CONFIG.GROUP_URL" target="_blank" class="btn-main" style="display:flex; align-items:center; justify-content:center; text-decoration:none; color:black;">{{ t[lang].joinGroup }}</a>
+                <div v-if="!user.groupJoined" class="task-row" @click="joinGroupTask">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="ri-telegram-fill" style="font-size: 2rem; color: #2AABEE;"></i>
+                        <div>
+                            <div style="font-weight:bold;">Join Community</div>
+                            <div style="font-size:0.8rem; color:#aaa;">Get $0.5 Bonus</div>
+                        </div>
+                    </div>
+                    <button class="btn-main" style="width: auto; height: 35px; margin:0;">Go</button>
                 </div>
 
                 <div class="vip-scroll-container">
@@ -140,271 +95,173 @@
                             <div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div>
                         </div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
-                            <div>{{ t[lang].daily }}: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
-                            <div style="margin-top:5px; color:#888;">Limit: ${{ plan.maxDailyWithdraw }}</div>
+                            <div>Daily: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
+                            <div style="margin-top:5px; color:#888;">Tasks: {{ plan.dailyLimit }} / Day</div>
                         </div>
-                        <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
-                        <button v-else class="btn-main" :disabled="vipLoading === Number(level)" @click="buyVip(Number(level))">
-                            <span v-if="vipLoading === Number(level)">...</span><span v-else>{{ t[lang].upgrade }}</span>
-                        </button>
+                        <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">Active</button>
+                        <button v-else class="btn-main" @click="buyVip(Number(level))">Activate</button>
                     </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'wallet'">
                 <div class="card">
-                    <div v-if="lastTx" class="status-box">
-                        <div>
-                            <div style="font-size:0.75rem; color:#888;">Last Activity</div>
-                            <div style="font-weight:bold;">{{ lastTx.type === 'deposit' ? t[lang].deposit : t[lang].withdraw }} ${{ lastTx.amount }}</div>
-                        </div>
-                        <van-tag :type="getStatusColor(lastTx.status)">{{ lastTx.status.toUpperCase() }}</van-tag>
-                    </div>
-
                     <van-tabs v-model:active="walletTab" background="transparent" color="#00E676" title-active-color="#00E676">
-                        <van-tab :title="t[lang].deposit">
+                        <van-tab title="Deposit">
                             <div style="padding: 20px 0;">
-                                <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:15px; justify-content:center;">
-                                    <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
-                                    <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
+                                <div style="font-size:0.9rem; text-align:center; margin-bottom:10px; color:#aaa;">Select Network:</div>
+                                <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:20px; justify-content:center;">
+                                    <van-radio name="TRC20" checked-color="#00E676">USDT-TRC20</van-radio>
+                                    <van-radio name="BEP20" checked-color="#00E676">USDT-BEP20</van-radio>
                                 </van-radio-group>
-                                <div class="wallet-box">
-                                    <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">USDT-{{ depositNetwork }} Address:</div>
-                                    <code style="color: var(--primary); word-break: break-all; font-size:0.9rem; font-weight:bold;">{{ WALLETS[depositNetwork] }}</code>
-                                    <div style="margin-top:15px"><van-button size="small" plain type="success" icon="todo-list-o" @click="copyAddress">{{ t[lang].copy }}</van-button></div>
+                                <div style="background:#111; padding:15px; border-radius:8px; text-align:center; border:1px solid #333;">
+                                    <code style="color: var(--primary); word-break: break-all; font-weight:bold;">{{ WALLETS[depositNetwork] }}</code>
+                                    <div style="margin-top:10px"><van-button size="small" plain type="success" @click="copyAddress">Copy Address</van-button></div>
                                 </div>
-                                <div style="text-align:center; margin-bottom:10px; font-size:0.85rem; color:#aaa;">
-                                    Recommended: <b style="color:white">${{ getMinDeposit() }}</b> for next Level
-                                </div>
-                                <van-field v-model="depAmount" :label="t[lang].amount" type="number" :placeholder="`Min ${getMinDeposit()}$`"></van-field>
-                                <van-field v-model="depTxid" label="TXID" placeholder="Hash"></van-field>
-                                <button class="btn-main" style="margin-top:20px" @click="submitDeposit">{{ t[lang].confirm }}</button>
+                                <van-field v-model="depAmount" label="Amount" type="number" placeholder="Min 5$"></van-field>
+                                <van-field v-model="depTxid" label="TXID" placeholder="Transaction Hash"></van-field>
+                                <button class="btn-main" style="margin-top:20px" @click="submitDeposit">Confirm Deposit</button>
                             </div>
                         </van-tab>
-                        <van-tab :title="t[lang].withdraw">
+                        <van-tab title="Withdraw">
                             <div style="padding: 20px 0;">
-                                <div style="font-size:0.75rem; color:#aaa; text-align:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                                    🔒 {{ lang === 'ar' ? 'السحوبات محدودة لحماية السيولة وضمان العدالة.' : 'Withdrawals are limited to protect liquidity and ensure fairness.' }}
-                                </div>
-
-                                <div v-if="!user.pin" style="text-align:center; padding:20px;">
-                                    <i class="ri-shield-keyhole-line" style="font-size:3rem; color:var(--warning);"></i>
-                                    <p>{{ t[lang].setupPin }}</p>
-                                    <van-field v-model="newPin" type="digit" maxlength="4" placeholder="****" style="text-align:center; font-size:1.5rem; letter-spacing:5px;"></van-field>
-                                    <button class="btn-main" style="margin-top:10px" @click="setupPin">{{ t[lang].savePin }}</button>
+                                <div v-if="!user.pin" style="text-align:center;">
+                                    <p>Please set a withdrawal PIN first</p>
+                                    <van-field v-model="newPin" type="digit" maxlength="4" placeholder="****" style="text-align:center; font-size:1.5rem;"></van-field>
+                                    <button class="btn-main" @click="setupPin">Save PIN</button>
                                 </div>
                                 <div v-else>
-                                    <div style="margin-bottom:15px; text-align:center;">
-                                        <div style="background:rgba(255,193,7,0.1); color:var(--warning); padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.8rem;">
-                                            <i class="ri-error-warning-line"></i> {{ t[lang].secWarn }}
-                                        </div>
-                                    </div>
-                                    <van-field v-model="wAmt" :label="t[lang].amount" type="number" placeholder="Min 1$"></van-field>
-                                    <van-field v-model="wAddr" :label="t[lang].addr" placeholder="USDT Address"></van-field>
-                                    <van-field v-model="wPin" :label="t[lang].pin" type="password" maxlength="4" placeholder="****"></van-field>
-                                    <button class="btn-main" style="margin-top:20px" @click="withdraw">{{ t[lang].reqWithdraw }}</button>
+                                    <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:15px; justify-content:center;">
+                                        <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
+                                        <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
+                                    </van-radio-group>
                                     
-                                    <div style="font-size:0.7rem; color:#666; text-align:center; margin-top:10px;">
-                                        <i class="ri-shield-check-line"></i> {{ lang === 'ar' ? 'المراجعة اليدوية تضمن استقرار النظام' : 'Manual review ensures system stability' }}
+                                    <van-field v-model="wAddr" label="Address" placeholder="USDT Address"></van-field>
+                                    <div v-if="user.savedWallet && !wAddr" @click="wAddr = user.savedWallet" style="font-size:0.75rem; color:var(--primary); padding:0 16px; cursor:pointer;">
+                                        Use saved: {{ user.savedWallet.slice(0,8) }}...
                                     </div>
+
+                                    <van-field v-model="wAmt" label="Amount" type="number" placeholder="Min 1$"></van-field>
+                                    <van-field v-model="wPin" label="PIN" type="password" maxlength="4" placeholder="****"></van-field>
+                                    <button class="btn-main" style="margin-top:20px" @click="withdraw">Request Withdraw</button>
                                 </div>
                             </div>
                         </van-tab>
                     </van-tabs>
                 </div>
-
-                <div class="card">
-                    <h3>🔔 {{ t[lang].history }}</h3>
-                    <div v-if="user.transactions.length === 0" style="text-align:center;color:#666; padding:20px;">
-                        {{ t[lang].noTx }}
-                    </div>
-                    <div v-for="tx in user.transactions.slice(0, 5)" :key="tx.id" class="log-item" style="flex-wrap:wrap;">
-                        <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-weight:bold; color:white;">{{ tx.type === 'deposit' ? t[lang].deposit : t[lang].withdraw }}</div>
-                                <span class="log-date">{{ formatDate(tx.date) }}</span>
-                                <span class="badge-status" :style="{color: tx.status==='completed'?'#00E676':(tx.status==='rejected'?'#FF5252':'#FFC107')}">{{ tx.status }}</span>
-                            </div>
-                            <div :class="tx.status === 'completed' || tx.type === 'deposit' ? 'amount-pos' : 'amount-neg'">
-                                {{ tx.type === 'deposit' ? '+' : '-' }}{{ tx.amount }}$
-                            </div>
-                        </div>
-                        <div v-if="isDelayed(tx)" style="width:100%; margin-top:5px; font-size:0.75rem; color:#FFC107; background:rgba(255,193,7,0.1); padding:4px; border-radius:4px; text-align:center;">
-                            <i class="ri-hourglass-fill"></i> System traffic high, priority queue active...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="footer-note">
-                    ℹ️ {{ lang === 'ar' ? 'المكافآت جزء من نظام ترويجي داخلي وليست استثماراً مالياً.' : 'Rewards are part of internal promo system, not financial investment.' }}
-                </div>
             </div>
 
-            <div v-if="activeTab === 'team'">
-                <div class="card" style="text-align: center; padding: 40px 20px;">
-                    <h2>{{ t[lang].community }}</h2>
-                    <div style="background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-around;">
-                        <div><h3>{{ user.referrals }}</h3><small>{{ t[lang].refs }}</small></div><div><h3>VIP {{ user.vip }}</h3><small>{{ t[lang].rank }}</small></div>
-                    </div>
-                    <button class="btn-main" @click="copyLink">{{ t[lang].copyLink }}</button>
-                </div>
-                <div class="card">
-                    <h3 style="margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">{{ t[lang].team }} Activity</h3>
-                    <div v-if="refLogs.length > 0">
-                        <div v-for="(log, i) in refLogs" :key="i" style="background:#222; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                            <div style="width:35px; height:35px; background:#333; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary);"><i class="ri-user-smile-line"></i></div>
-                            <div style="flex:1"><div style="font-weight:bold; color:white;">New Member</div><div style="font-size:0.85rem; color:#aaa;">Plan <span style="color:var(--primary)">{{ log.plan }}</span></div></div>
-                        </div>
-                    </div>
-                    <div v-else style="text-align:center; padding:30px 20px; color:#666;">
-                        <i class="ri-group-line" style="font-size:2.5rem; opacity:0.3; margin-bottom:10px; display:block"></i>
-                        <p>{{ lang === 'ar' ? 'قم بدعوة أصدقائك للحصول على مكافآت' : 'Invite friends to earn rewards' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666" style="border-top: 1px solid #222;">
-                <van-tabbar-item name="home" icon="flashlight-fill">{{ t[lang].home }}</van-tabbar-item>
-                <van-tabbar-item name="wallet" icon="wallet-3-line">{{ t[lang].wallet }}</van-tabbar-item>
-                <van-tabbar-item name="team" icon="team-line">{{ t[lang].team }}</van-tabbar-item>
+            <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666">
+                <van-tabbar-item name="home" icon="flashlight-fill">Home</van-tabbar-item>
+                <van-tabbar-item name="wallet" icon="wallet-3-line">Wallet</van-tabbar-item>
+                <van-tabbar-item name="team" icon="team-line">Team</van-tabbar-item>
             </van-tabbar>
         </div>
-
-        <van-popup v-model:show="showSupport" position="bottom" style="height: 60%; padding:20px;">
-            <h3 style="text-align:center; margin-bottom:20px;">{{ t[lang].support }}</h3>
-            <div style="background:rgba(0,230,118,0.1); color:var(--primary); padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.85rem;">
-                <i class="ri-information-line"></i> {{ lang === 'ar' ? 'سيتم الرد عليك عبر إشعار داخل البوت.' : 'You will receive a reply via bot notification.' }}
-            </div>
-            <van-field v-model="supportMsg" rows="4" autosize type="textarea" :placeholder="t[lang].writeMsg" style="background:#222; border-radius:8px; padding:10px;"></van-field>
-            <button class="btn-main" style="margin-top:20px;" @click="sendSupport">{{ t[lang].send }}</button>
-        </van-popup>
     </div>
 
     <script>
         const { createApp, ref, onMounted, computed } = Vue;
-        // ⚠️ استبدل الرابط أدناه برابط الـ Worker الخاص بك
-        const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", BOT_USERNAME: "TokenDrip_bot", GROUP_URL: "https://t.me/+bN5dIWAHqJ80ZTM0" };
+        const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", GROUP_URL: "https://t.me/+bN5dIWAHqJ80ZTM0" };
         const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto", BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200" };
-        
         const vipPlans = { 
             0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0}, 
-            1:{name:"VIP 1",price:5,dailyLimit:2,mineRate:0.25,maxDailyWithdraw:5}, 
-            2:{name:"VIP 2",price:10,dailyLimit:3,mineRate:0.24,maxDailyWithdraw:10}, 
-            3:{name:"VIP 3",price:20,dailyLimit:4,mineRate:0.23,maxDailyWithdraw:20}, 
-            4:{name:"VIP 4",price:30,dailyLimit:5,mineRate:0.22,maxDailyWithdraw:30}, 
-            5:{name:"VIP 5",price:50,dailyLimit:6,mineRate:0.21,maxDailyWithdraw:50} 
-        };
-        
-        // ✅ تحديث قاموس المصطلحات (Soft Language)
-        const t = {
-            ar: { balance: "الرصيد المتاح", doTask: "انضم للحملة", groupAlert: "يجب الانضمام للغروب أولاً", joinGroup: "انضم الآن", daily: "مكافأة يومية", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", setupPin: "أنشئ كلمة مرور للسحب", savePin: "حفظ كلمة المرور", reqWithdraw: "طلب سحب", pin: "كلمة المرور", addr: "العنوان", community: "المجتمع", refs: "أصدقاء", rank: "رتبتك", copyLink: "نسخ الرابط", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", support: "الدعم الفني", writeMsg: "اكتب مشكلتك هنا...", send: "إرسال تذكرة", history: "سجل العمليات", noTx: "لا توجد عمليات بعد", secWarn: "لا تشارك PIN مع أحد! تتم معالجة السحب يدوياً خلال 24 ساعة." },
-            en: { balance: "Available Balance", doTask: "Join Campaign", groupAlert: "Must join group first", joinGroup: "Join Now", daily: "Daily Reward", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", copy: "Copy", amount: "Amount", confirm: "Confirm", setupPin: "Setup Security PIN", savePin: "Save PIN", reqWithdraw: "Request Withdraw", pin: "Security PIN", addr: "Address", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", home: "Home", wallet: "Wallet", team: "Team", support: "Support", writeMsg: "Describe issue...", send: "Send Ticket", history: "History", noTx: "No transactions yet", secWarn: "Never share PIN! Withdrawals are manually processed in 24h." }
+            1:{name:"VIP 1",price:5,dailyLimit:1,mineRate:1.25,maxDailyWithdraw:5}, 
+            2:{name:"VIP 2",price:15,dailyLimit:2,mineRate:1.725,maxDailyWithdraw:15}, 
+            3:{name:"VIP 3",price:40,dailyLimit:3,mineRate:2.80,maxDailyWithdraw:40}, 
+            4:{name:"VIP 4",price:100,dailyLimit:4,mineRate:4.75,maxDailyWithdraw:100}, 
+            5:{name:"VIP 5",price:300,dailyLimit:5,mineRate:10.20,maxDailyWithdraw:300}, 
+            6:{name:"VIP 6",price:800,dailyLimit:6,mineRate:20.00,maxDailyWithdraw:800} 
         };
 
         createApp({
             setup() {
-                const lang = ref('ar');
-                const toggleLang = () => lang.value = lang.value === 'ar' ? 'en' : 'ar';
-                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, pin: null, transactions: [], status: 'active' });
-                const inGroup = ref(false);
+                const user = ref({ balance: 0, vip: 0, savedWallet: null, groupJoined: false });
                 const loading = ref(true);
                 const activeTab = ref('home'); const walletTab = ref(0);
                 const depAmount = ref(''); const depTxid = ref(''); const wAmt = ref(''); const wAddr = ref(''); const wPin = ref(''); const newPin = ref(''); const depositNetwork = ref('BEP20');
-                const fakeWithdraw = ref({ show: false, text: "", active: false });
-                const showSupport = ref(false); const supportMsg = ref(''); const serverError = ref(false);
-                const refLogs = ref([]);
-                const vipLoading = ref(null);
+                const isProcessing = ref(false); // للسبينر
                 const timeLeft = ref('');
                 let timerInterval = null;
                 const tg = window.Telegram.WebApp; tg.expand();
 
-                const lastTx = computed(() => user.value.transactions.length > 0 ? user.value.transactions[0] : null);
-
-                const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { serverError.value = true; return { ok: false, error: "Connection Error" }; } };
-                const refreshPage = () => window.location.reload();
+                const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { return { ok: false, error: "Connection Error" }; } };
                 
                 const startTimer = () => {
                     if(timerInterval) clearInterval(timerInterval);
                     const updateTimer = () => {
                         const now = new Date();
-                        const tomorrow = new Date(now);
-                        tomorrow.setUTCHours(24, 0, 0, 0); 
+                        const tomorrow = new Date(now); tomorrow.setUTCHours(24, 0, 0, 0); 
                         const diff = tomorrow - now;
                         if (diff <= 0) { timeLeft.value = ''; clearInterval(timerInterval); refresh(); } 
                         else { const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000); timeLeft.value = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
-                    };
-                    updateTimer(); timerInterval = setInterval(updateTimer, 1000);
+                    }; updateTimer(); timerInterval = setInterval(updateTimer, 1000);
                 };
 
                 const refresh = async () => { 
                     const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); 
                     if (data.ok) { 
-                        user.value = data.user; inGroup.value = data.inGroup; loading.value = false; if(user.value.vip > 0) startFakeBar(); fetchLogs(); 
+                        user.value = data.user; loading.value = false;
                         if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); else timeLeft.value = '';
-                        
-                        if (user.value.status === 'review') {
-                            vant.showDialog({
-                                title: lang.value === 'ar' ? '⚠️ تنبيه أمان' : '⚠️ Security Alert',
-                                message: lang.value === 'ar' ? 'حسابك قيد المراجعة الروتينية لضمان الأمان. لا تقلق، يمكنك استخدام التطبيق لكن السحب معلق مؤقتاً.' : 'Your account is under routine security review. Withdrawals are temporarily paused.',
-                                theme: 'round-button',
-                                confirmButtonColor: '#FFC107'
-                            });
-                        }
                     } 
                 };
-                
-                const fetchLogs = async () => { const data = await api("get_logs"); if (data.ok) { refLogs.value = data.refLogs; } };
-                const handleCollect = async () => { if(timeLeft.value !== '') return; const data = await api("mine"); if (data.ok) { user.value = data.user; vant.showSuccessToast(lang.value === 'ar' ? '+ تم استلام المكافأة' : '+ Reward Claimed'); startFakeBar(); if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); } else vant.showNotify({ type: 'warning', message: data.error }); };
-                const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set ✅'); } };
-                
-                const withdraw = async () => {
-                    if (!wAddr.value || wAddr.value.length < 20) return vant.showToast(lang.value === 'ar' ? '⚠️ عنوان المحفظة قصير' : '⚠️ Address too short');
-                    const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
-                    if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
-                    else { const err = data.error || "Error"; if (err.includes("Group") || err.includes("PIN") || err.includes("Limit") || err.includes("System") || err.includes("review")) vant.showDialog({ title: '⚠️ Note', message: err }); else vant.showNotify({ type: 'danger', message: err }); }
+
+                const isMiningDisabled = computed(() => {
+                    if (user.value.vip === 0) return true;
+                    if (isProcessing.value) return true;
+                    if (timeLeft.value !== '') return true;
+                    return false;
+                });
+
+                const handleCollect = async () => { 
+                    if(isMiningDisabled.value) return;
+                    isProcessing.value = true; // تشغيل السبينر
+                    
+                    // محاكاة تأخير بسيط للواقعية
+                    setTimeout(async () => {
+                        const data = await api("mine"); 
+                        isProcessing.value = false;
+                        if (data.ok) { 
+                            user.value = data.user; 
+                            vant.showSuccessToast('Task Completed Successfully! 🎉'); 
+                            if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); 
+                        } else { 
+                            vant.showNotify({ type: 'warning', message: data.error }); 
+                        }
+                    }, 1000);
                 };
 
-                const sendSupport = async () => { if(!supportMsg.value) return; await api("support", { msg: supportMsg.value }); showSupport.value = false; supportMsg.value = ''; vant.showSuccessToast('Ticket Sent'); };
+                const joinGroupTask = async () => {
+                    window.open(CONFIG.GROUP_URL, '_blank');
+                    setTimeout(async () => {
+                        const d = await api("join_group_bonus");
+                        if(d.ok) { user.value = d.user; vant.showSuccessToast('Bonus Received +0.5$'); }
+                    }, 2000);
+                };
+
+                const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set'); } };
+                
+                const withdraw = async () => {
+                    if (!wAddr.value) return vant.showToast('Enter Address');
+                    const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
+                    if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
+                    else { vant.showNotify({ type: 'danger', message: data.error }); }
+                };
+
                 const submitDeposit = async () => { const d = await api("deposit", { amount: depAmount.value, txid: depTxid.value, network: depositNetwork.value }); if(d.ok) { vant.showSuccessToast('Reviewing...'); depAmount.value=''; depTxid.value=''; } else { vant.showToast(d.error); } };
                 
                 const buyVip = (t) => {
                     const plan = vipPlans[t];
-                    const msg = lang.value === 'ar' ? `هل أنت متأكد من تفعيل ${plan.name} بسعر ${plan.price}$؟` : `Confirm upgrade to ${plan.name} for $${plan.price}?`;
-                    vant.showConfirmDialog({ title: 'Upgrade', message: msg, confirmButtonText: lang.value === 'ar' ? 'موافق' : 'Confirm', cancelButtonText: lang.value === 'ar' ? 'إلغاء' : 'Cancel' }).then(async () => {
-                        vipLoading.value = t;
+                    vant.showConfirmDialog({ title: 'Upgrade', message: `Buy ${plan.name} for $${plan.price}?` }).then(async () => {
                         const d = await api("buy_vip", { tier: t });
                         if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } else vant.showFailToast(d.error);
-                        vipLoading.value = null;
                     }).catch(() => {});
                 };
 
                 const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showToast('Copied'); };
-                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?startapp=${user.value.id}`); vant.showToast('Copied'); };
                 const formatMoney = (v) => Number(v).toFixed(2);
-                const formatDate = (ts) => new Date(ts).toLocaleDateString();
-                const getStatusText = () => user.value.vip===0 ? (lang.value==='ar'?'غير نشط':'Inactive') : (user.value.mineCount>=vipPlans[user.value.vip].dailyLimit ? 'Done ✅' : 'Start Session');
-                const getStatusColor = (s) => s === 'completed' ? 'success' : (s === 'rejected' ? 'danger' : 'warning');
-                
-                const getMinDeposit = () => {
-                    const nextVip = Math.min(Math.max(1, user.value.vip + 1), 6);
-                    return vipPlans[nextVip].price;
-                };
-                const isDelayed = (tx) => {
-                    return tx.status === 'pending' && (Date.now() - tx.date) > (12 * 60 * 60 * 1000);
-                };
-
-                const startFakeBar = () => {
-                    if(fakeWithdraw.value.active) return; fakeWithdraw.value.active = true;
-                    const names = ["Ali", "Saad", "User99", "Ahmed", "Moha", "Sara", "Crypto", "Miner"];
-                    const run = () => {
-                        const amt = (Math.random() * 14 + 1).toFixed(2); const name = names[Math.floor(Math.random()*names.length)];
-                        fakeWithdraw.value.text = lang.value === 'ar' ? `✅ تم سحب ${amt}$ بنجاح بواسطة ${name}***` : `✅ ${name}*** successfully withdrew $${amt}`;
-                        fakeWithdraw.value.show = true; setTimeout(() => { fakeWithdraw.value.show = false; }, 4000); setTimeout(run, Math.random() * 5000 + 5000);
-                    }; run();
-                };
 
                 onMounted(refresh);
-                return { loading, activeTab, walletTab, user, inGroup, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, fakeWithdraw, showSupport, supportMsg, lang, t, CONFIG, WALLETS, refLogs, serverError, refreshPage, toggleLang, handleCollect, setupPin, withdraw, sendSupport, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, getStatusText, formatDate, depositNetwork, vipLoading, timeLeft, lastTx, getStatusColor, getMinDeposit, isDelayed };
+                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, formatMoney, joinGroupTask, CONFIG, WALLETS };
             }
         }).use(vant).mount("#app");
     </script>
