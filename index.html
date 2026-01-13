@@ -61,6 +61,8 @@
     </style>
 </head>
 <body>
+    <script>alert("HTML Loaded v7.4");</script>
+
     <div id="app" v-cloak>
         <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
              <van-loading color="#00E676" vertical>Connecting...</van-loading>
@@ -285,8 +287,18 @@
                     fakeNotice.value = msgs[Math.floor(Math.random() * msgs.length)];
                 };
 
+                // ✅ 🛠️ Strict Telegram Check & Setup
                 let timerInterval = null;
-                const tg = window.Telegram.WebApp; tg.expand();
+                let tg = null;
+
+                if (window.Telegram && window.Telegram.WebApp) {
+                    tg = window.Telegram.WebApp;
+                    tg.expand();
+                } else {
+                    // ⛔ إيقاف التطبيق إذا لم يكن داخل تلغرام
+                    alert("❌ Please open this app from Telegram only");
+                    throw new Error("Telegram WebApp required");
+                }
 
                 const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { return { ok: false, error: "Connection Error" }; } };
                 
@@ -301,13 +313,19 @@
                     }; updateTimer(); timerInterval = setInterval(updateTimer, 1000);
                 };
 
+                // ✅ 🛠️ Refresh Logic with Error Handling
                 const refresh = async () => { 
-                    // ✅ تم التعديل هنا: استخدام get('start') بدلاً من get('startapp')
                     const data = await api("login", { ref: new URLSearchParams(window.location.search).get('start') }); 
-                    if (data.ok) { 
-                        user.value = data.user; loading.value = false;
-                        if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); else timeLeft.value = '';
-                    } 
+                    
+                    if (!data.ok) {
+                        loading.value = false;
+                        vant.showNotify({ type: 'danger', message: data.error || 'Connection Failed' });
+                        return; // ⛔ توقف هنا ولا تكمل
+                    }
+
+                    user.value = data.user; 
+                    loading.value = false;
+                    if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); else timeLeft.value = '';
                 };
 
                 const isMiningDisabled = computed(() => {
@@ -381,11 +399,8 @@
                     }).catch(() => {});
                 };
 
-                // ✅ تعديل رابط النسخ ليستخدم ?start= بدلاً من ?startapp=
-                const copyLink = () => { 
-                    navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?start=${user.value.id}`); 
-                    vant.showToast(t[lang.value].copy); 
-                };
+                const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showToast(t[lang.value].copy); };
+                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?start=${user.value.id}`); vant.showToast(t[lang.value].copy); };
                 const formatMoney = (v) => Number(v).toFixed(2);
 
                 onMounted(() => {
