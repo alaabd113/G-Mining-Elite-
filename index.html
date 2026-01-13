@@ -16,13 +16,16 @@
         :root { --bg-color: #0f0f0f; --card-bg: #1c1c1c; --primary: #00E676; --text-color: #ffffff; --danger: #FF5252; --warning: #FFC107; }
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* زر التعدين الدائري التفاعلي */
+        /* أزرار اللغة والدعم في الأعلى */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
+        .icon-btn { background: rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; }
+
         .harvest-circle { 
             width: 190px; height: 190px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(0,230,118,0.1) 0%, rgba(0,0,0,0) 70%); 
             border: 2px dashed var(--primary); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            margin: 30px auto; position: relative; cursor: pointer; transition: 0.3s; 
+            margin: 20px auto; position: relative; cursor: pointer; transition: 0.3s; 
         }
         .harvest-circle:active { transform: scale(0.95); }
         .harvest-circle.disabled { 
@@ -47,6 +50,12 @@
         .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.15); }
 
         .task-row { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
+        
+        /* تنسيق النوافذ المنبثقة */
+        .van-popup { background: var(--card-bg) !important; color: white !important; }
+        .van-field__label { color: #aaa !important; } .van-field__control { color: white !important; } .van-cell { background: transparent !important; }
+        .van-dialog { background: #222 !important; color: white !important; }
+        .van-dialog__confirm { color: var(--primary) !important; }
     </style>
 </head>
 <body>
@@ -55,10 +64,15 @@
              <van-loading color="#00E676" vertical>Loading...</van-loading>
         </div>
 
-        <div v-else style="padding-top: 20px;">
+        <div v-else>
+            <div class="top-bar">
+                <div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? 'EN' : 'عربي' }}</div>
+                <div class="icon-btn" @click="showSupport = true"><i class="ri-customer-service-2-fill"></i></div>
+            </div>
+
             <div v-if="activeTab === 'home'">
                 <div class="card" style="text-align: center;">
-                    <span style="color: #888;">Total Balance</span>
+                    <span style="color: #888;">{{ t[lang].balance }}</span>
                     <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 5px 0;">${{ formatMoney(user.balance) }}</div>
                     <van-tag type="success" size="medium">{{ vipPlans[user.vip].name }}</van-tag>
                 </div>
@@ -67,13 +81,13 @@
                     <div class="spinner-border"></div>
                     <div v-if="timeLeft === ''">
                         <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
-                        <h3 style="margin: 5px 0; color: white;">Start Task</h3>
-                        <span style="font-size: 0.85rem; color: #aaa;">Click to Earn</span>
+                        <h3 style="margin: 5px 0; color: white;">{{ t[lang].startTask }}</h3>
+                        <span style="font-size: 0.85rem; color: #aaa;">{{ t[lang].clickEarn }}</span>
                     </div>
                     <div v-else>
                         <i class="ri-time-line" style="font-size: 3rem; color: #666;"></i>
                         <div style="font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #888;">{{ timeLeft }}</div>
-                        <span style="font-size: 0.75rem; color: #666;">Reset Timer</span>
+                        <span style="font-size: 0.75rem; color: #666;">{{ t[lang].wait }}</span>
                     </div>
                 </div>
 
@@ -81,11 +95,11 @@
                     <div style="display:flex; align-items:center; gap:10px;">
                         <i class="ri-telegram-fill" style="font-size: 2rem; color: #2AABEE;"></i>
                         <div>
-                            <div style="font-weight:bold;">Join Community</div>
-                            <div style="font-size:0.8rem; color:#aaa;">Get $0.5 Bonus</div>
+                            <div style="font-weight:bold;">{{ t[lang].joinGroup }}</div>
+                            <div style="font-size:0.8rem; color:#aaa;">{{ t[lang].bonus }} $0.5</div>
                         </div>
                     </div>
-                    <button class="btn-main" style="width: auto; height: 35px; margin:0;">Go</button>
+                    <button class="btn-main" style="width: auto; height: 35px; margin:0;">{{ t[lang].go }}</button>
                 </div>
 
                 <div class="vip-scroll-container">
@@ -95,11 +109,11 @@
                             <div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div>
                         </div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
-                            <div>Daily: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
-                            <div style="margin-top:5px; color:#888;">Tasks: {{ plan.dailyLimit }} / Day</div>
+                            <div>{{ t[lang].daily }}: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
+                            <div style="margin-top:5px; color:#888;">{{ t[lang].tasks }}: {{ plan.dailyLimit }}</div>
                         </div>
-                        <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">Active</button>
-                        <button v-else class="btn-main" @click="buyVip(Number(level))">Activate</button>
+                        <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
+                        <button v-else class="btn-main" @click="buyVip(Number(level))">{{ t[lang].upgrade }}</button>
                     </div>
                 </div>
             </div>
@@ -107,28 +121,28 @@
             <div v-if="activeTab === 'wallet'">
                 <div class="card">
                     <van-tabs v-model:active="walletTab" background="transparent" color="#00E676" title-active-color="#00E676">
-                        <van-tab title="Deposit">
+                        <van-tab :title="t[lang].deposit">
                             <div style="padding: 20px 0;">
-                                <div style="font-size:0.9rem; text-align:center; margin-bottom:10px; color:#aaa;">Select Network:</div>
+                                <div style="font-size:0.9rem; text-align:center; margin-bottom:10px; color:#aaa;">{{ t[lang].network }}:</div>
                                 <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:20px; justify-content:center;">
-                                    <van-radio name="TRC20" checked-color="#00E676">USDT-TRC20</van-radio>
-                                    <van-radio name="BEP20" checked-color="#00E676">USDT-BEP20</van-radio>
+                                    <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
+                                    <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
                                 </van-radio-group>
                                 <div style="background:#111; padding:15px; border-radius:8px; text-align:center; border:1px solid #333;">
                                     <code style="color: var(--primary); word-break: break-all; font-weight:bold;">{{ WALLETS[depositNetwork] }}</code>
-                                    <div style="margin-top:10px"><van-button size="small" plain type="success" @click="copyAddress">Copy Address</van-button></div>
+                                    <div style="margin-top:10px"><van-button size="small" plain type="success" @click="copyAddress">{{ t[lang].copy }}</van-button></div>
                                 </div>
-                                <van-field v-model="depAmount" label="Amount" type="number" placeholder="Min 5$"></van-field>
-                                <van-field v-model="depTxid" label="TXID" placeholder="Transaction Hash"></van-field>
-                                <button class="btn-main" style="margin-top:20px" @click="submitDeposit">Confirm Deposit</button>
+                                <van-field v-model="depAmount" :label="t[lang].amount" type="number" placeholder="Min 5$"></van-field>
+                                <van-field v-model="depTxid" label="TXID" placeholder="Hash"></van-field>
+                                <button class="btn-main" style="margin-top:20px" @click="submitDeposit">{{ t[lang].confirm }}</button>
                             </div>
                         </van-tab>
-                        <van-tab title="Withdraw">
+                        <van-tab :title="t[lang].withdraw">
                             <div style="padding: 20px 0;">
                                 <div v-if="!user.pin" style="text-align:center;">
-                                    <p>Please set a withdrawal PIN first</p>
+                                    <p>{{ t[lang].setPinMsg }}</p>
                                     <van-field v-model="newPin" type="digit" maxlength="4" placeholder="****" style="text-align:center; font-size:1.5rem;"></van-field>
-                                    <button class="btn-main" @click="setupPin">Save PIN</button>
+                                    <button class="btn-main" @click="setupPin">{{ t[lang].savePin }}</button>
                                 </div>
                                 <div v-else>
                                     <van-radio-group v-model="depositNetwork" direction="horizontal" style="margin-bottom:15px; justify-content:center;">
@@ -136,14 +150,14 @@
                                         <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
                                     </van-radio-group>
                                     
-                                    <van-field v-model="wAddr" label="Address" placeholder="USDT Address"></van-field>
+                                    <van-field v-model="wAddr" :label="t[lang].addr" placeholder="USDT Address"></van-field>
                                     <div v-if="user.savedWallet && !wAddr" @click="wAddr = user.savedWallet" style="font-size:0.75rem; color:var(--primary); padding:0 16px; cursor:pointer;">
-                                        Use saved: {{ user.savedWallet.slice(0,8) }}...
+                                        {{ t[lang].useSaved }}: {{ user.savedWallet.slice(0,8) }}...
                                     </div>
 
-                                    <van-field v-model="wAmt" label="Amount" type="number" placeholder="Min 1$"></van-field>
-                                    <van-field v-model="wPin" label="PIN" type="password" maxlength="4" placeholder="****"></van-field>
-                                    <button class="btn-main" style="margin-top:20px" @click="withdraw">Request Withdraw</button>
+                                    <van-field v-model="wAmt" :label="t[lang].amount" type="number" placeholder="Min 1$"></van-field>
+                                    <van-field v-model="wPin" :label="t[lang].pin" type="password" maxlength="4" placeholder="****"></van-field>
+                                    <button class="btn-main" style="margin-top:20px" @click="withdraw">{{ t[lang].reqWithdraw }}</button>
                                 </div>
                             </div>
                         </van-tab>
@@ -151,18 +165,39 @@
                 </div>
             </div>
 
+            <div v-if="activeTab === 'team'">
+                <div class="card" style="text-align: center; padding: 30px;">
+                    <h2>{{ t[lang].community }}</h2>
+                    <div style="background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-around;">
+                        <div><h3>{{ user.referrals }}</h3><small>{{ t[lang].refs }}</small></div><div><h3>VIP {{ user.vip }}</h3><small>{{ t[lang].rank }}</small></div>
+                    </div>
+                    <div style="margin-bottom: 20px; font-size: 0.9rem; color: #aaa;">
+                        {{ lang === 'ar' ? 'احصل على مكافأة فورية عند ترقية أصدقائك!' : 'Get instant bonus when friends upgrade!' }}
+                    </div>
+                    <button class="btn-main" @click="copyLink">{{ t[lang].copyLink }}</button>
+                </div>
+            </div>
+
+            <van-popup v-model:show="showSupport" position="bottom" style="height: 50%; padding: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">{{ t[lang].support }}</h3>
+                <van-field v-model="supportMsg" rows="4" autosize type="textarea" :placeholder="t[lang].writeMsg" style="background: #222; border-radius: 8px; margin-bottom: 15px;"></van-field>
+                <button class="btn-main" @click="sendSupport">{{ t[lang].send }}</button>
+            </van-popup>
+
             <van-tabbar v-model="activeTab" :fixed="true" theme="dark" active-color="#00E676" inactive-color="#666">
-                <van-tabbar-item name="home" icon="flashlight-fill">Home</van-tabbar-item>
-                <van-tabbar-item name="wallet" icon="wallet-3-line">Wallet</van-tabbar-item>
-                <van-tabbar-item name="team" icon="team-line">Team</van-tabbar-item>
+                <van-tabbar-item name="home" icon="flashlight-fill">{{ t[lang].home }}</van-tabbar-item>
+                <van-tabbar-item name="wallet" icon="wallet-3-line">{{ t[lang].wallet }}</van-tabbar-item>
+                <van-tabbar-item name="team" icon="team-line">{{ t[lang].team }}</van-tabbar-item>
             </van-tabbar>
         </div>
     </div>
 
     <script>
         const { createApp, ref, onMounted, computed } = Vue;
-        const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", GROUP_URL: "https://t.me/+bN5dIWAHqJ80ZTM0" };
+        // ⚠️ إعدادات السيرفر
+        const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", GROUP_URL: "https://t.me/+bN5dIWAHqJ80ZTM0", BOT_USERNAME: "TokenDrip_bot" };
         const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto", BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200" };
+        
         const vipPlans = { 
             0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0}, 
             1:{name:"VIP 1",price:5,dailyLimit:1,mineRate:1.25,maxDailyWithdraw:5}, 
@@ -173,13 +208,24 @@
             6:{name:"VIP 6",price:800,dailyLimit:6,mineRate:20.00,maxDailyWithdraw:800} 
         };
 
+        // 🌐 الترجمة
+        const t = {
+            ar: { balance: "الرصيد الكلي", startTask: "بدء المهمة", clickEarn: "اضغط للربح", wait: "انتظر التحديث", joinGroup: "انضم للمجتمع", bonus: "مكافأة", go: "نفذ", daily: "ربح يومي", tasks: "مهام", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", network: "الشبكة", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", setPinMsg: "يجب تعيين كلمة مرور للسحب", savePin: "حفظ الرمز", addr: "العنوان", useSaved: "استخدام المحفوظ", reqWithdraw: "طلب سحب", pin: "كلمة المرور", community: "المجتمع", refs: "أصدقاء", rank: "رتبة", copyLink: "نسخ الرابط", support: "الدعم الفني", writeMsg: "اكتب مشكلتك...", send: "إرسال", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", taskDone: "تمت المهمة بنجاح! 🎉" },
+            en: { balance: "Total Balance", startTask: "Start Task", clickEarn: "Click to Earn", wait: "Wait Reset", joinGroup: "Join Community", bonus: "Bonus", go: "Go", daily: "Daily", tasks: "Tasks", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", network: "Network", copy: "Copy", amount: "Amount", confirm: "Confirm", setPinMsg: "Set Withdrawal PIN", savePin: "Save PIN", addr: "Address", useSaved: "Use Saved", reqWithdraw: "Request Withdraw", pin: "PIN Code", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", support: "Support", writeMsg: "Describe issue...", send: "Send", home: "Home", wallet: "Wallet", team: "Team", taskDone: "Task Completed Successfully! 🎉" }
+        };
+
         createApp({
             setup() {
-                const user = ref({ balance: 0, vip: 0, savedWallet: null, groupJoined: false });
+                const lang = ref('ar');
+                const toggleLang = () => lang.value = lang.value === 'ar' ? 'en' : 'ar';
+                
+                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, savedWallet: null, groupJoined: false });
                 const loading = ref(true);
                 const activeTab = ref('home'); const walletTab = ref(0);
                 const depAmount = ref(''); const depTxid = ref(''); const wAmt = ref(''); const wAddr = ref(''); const wPin = ref(''); const newPin = ref(''); const depositNetwork = ref('BEP20');
-                const isProcessing = ref(false); // للسبينر
+                
+                const showSupport = ref(false); const supportMsg = ref('');
+                const isProcessing = ref(false);
                 const timeLeft = ref('');
                 let timerInterval = null;
                 const tg = window.Telegram.WebApp; tg.expand();
@@ -214,15 +260,13 @@
 
                 const handleCollect = async () => { 
                     if(isMiningDisabled.value) return;
-                    isProcessing.value = true; // تشغيل السبينر
-                    
-                    // محاكاة تأخير بسيط للواقعية
+                    isProcessing.value = true;
                     setTimeout(async () => {
                         const data = await api("mine"); 
                         isProcessing.value = false;
                         if (data.ok) { 
                             user.value = data.user; 
-                            vant.showSuccessToast('Task Completed Successfully! 🎉'); 
+                            vant.showSuccessToast(t[lang.value].taskDone); 
                             if (user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); 
                         } else { 
                             vant.showNotify({ type: 'warning', message: data.error }); 
@@ -235,7 +279,8 @@
                     setTimeout(async () => {
                         const d = await api("join_group_bonus");
                         if(d.ok) { user.value = d.user; vant.showSuccessToast('Bonus Received +0.5$'); }
-                    }, 2000);
+                        else if(d.error && d.error.includes("Not in group")) vant.showNotify({ type: 'warning', message: 'Please join first!' });
+                    }, 5000);
                 };
 
                 const setupPin = async () => { if (newPin.value.length < 4) return vant.showToast('4 digits required'); const data = await api("set_pin", { pin: newPin.value }); if (data.ok) { user.value = data.user; vant.showSuccessToast('PIN Set'); } };
@@ -247,21 +292,29 @@
                     else { vant.showNotify({ type: 'danger', message: data.error }); }
                 };
 
+                const sendSupport = async () => {
+                    if(!supportMsg.value) return;
+                    const d = await api("support", { msg: supportMsg.value });
+                    if(d.ok) { showSupport.value = false; supportMsg.value = ''; vant.showSuccessToast('Sent ✅'); }
+                };
+
                 const submitDeposit = async () => { const d = await api("deposit", { amount: depAmount.value, txid: depTxid.value, network: depositNetwork.value }); if(d.ok) { vant.showSuccessToast('Reviewing...'); depAmount.value=''; depTxid.value=''; } else { vant.showToast(d.error); } };
                 
-                const buyVip = (t) => {
-                    const plan = vipPlans[t];
-                    vant.showConfirmDialog({ title: 'Upgrade', message: `Buy ${plan.name} for $${plan.price}?` }).then(async () => {
-                        const d = await api("buy_vip", { tier: t });
+                const buyVip = (lvl) => {
+                    const plan = vipPlans[lvl];
+                    const msg = lang.value === 'ar' ? `شراء ${plan.name} بسعر ${plan.price}$؟` : `Buy ${plan.name} for $${plan.price}?`;
+                    vant.showConfirmDialog({ title: 'Upgrade', message: msg }).then(async () => {
+                        const d = await api("buy_vip", { tier: lvl });
                         if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } else vant.showFailToast(d.error);
                     }).catch(() => {});
                 };
 
-                const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showToast('Copied'); };
+                const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showToast(t[lang.value].copy); };
+                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?startapp=${user.value.id}`); vant.showToast(t[lang.value].copy); };
                 const formatMoney = (v) => Number(v).toFixed(2);
 
                 onMounted(refresh);
-                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, formatMoney, joinGroupTask, CONFIG, WALLETS };
+                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport };
             }
         }).use(vant).mount("#app");
     </script>
