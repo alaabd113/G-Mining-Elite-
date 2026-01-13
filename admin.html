@@ -61,7 +61,7 @@
     <div class="header">
         <div>
             <h1>🛡️ TokenDrip Ops</h1>
-            <span style="font-size:0.75rem; color:#666;">v3.1 Golden</span>
+            <span style="font-size:0.75rem; color:#666;">v3.2 Golden Reference</span>
         </div>
         <div class="refresh-btn" onclick="refreshAll()" title="Refresh All"><i class="ri-refresh-line"></i></div>
     </div>
@@ -88,7 +88,7 @@
             <button class="btn-search" onclick="fetchUserInfo()">جلب البيانات</button>
             
             <div id="searchResult" style="display:none; margin-top:15px; border-top:1px dashed #444; padding-top:15px;">
-            </div>
+                </div>
         </div>
 
         <div class="card">
@@ -96,7 +96,6 @@
             <div style="background:rgba(255,193,7,0.05); padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.8rem; color:#aaa; border:1px solid #333;">
                 ℹ️ الموافقة تعيد الحساب إلى <b>Active</b> تلقائياً.<br>
                 ℹ️ الرفض يعيد المبلغ للرصيد.<br>
-                ℹ️ يتم تسجيل TXID عالمياً لمنع التكرار.
             </div>
             
             <label>User ID</label>
@@ -146,7 +145,7 @@
     </div>
 
     <script>
-        // ⚠️ استبدل هذا برابط السيرفر الخاص بك
+        // ⚠️ هام: تأكد من أن الرابط مطابق لرابط السيرفر الجديد
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const ALLOWED_ADMIN_ID = 921301895;
         const ADMIN_PASS = "Admin@Token2024"; 
@@ -181,7 +180,6 @@
         async function api(act, pl) {
             setBusy(true);
             try {
-                // ملاحظة: لوحة التحكم ترسل initData أيضاً للتحقق
                 const r = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) });
                 setBusy(false);
                 return await r.json();
@@ -208,6 +206,7 @@
                 }
                 else if(u.status === 'review') { badgeClass = 'status-review'; badgeText = 'UNDER REVIEW ⚠️'; }
 
+                // سجل النشاط العام
                 let logsHtml = '';
                 if(u.logs && u.logs.length > 0) {
                     u.logs.slice(0,5).forEach(l => {
@@ -215,11 +214,11 @@
                     });
                 } else { logsHtml = '<div style="color:#666; text-align:center;">No recent activity</div>'; }
 
-                // عرض سجل الإحالات
+                // ✅ سجل الإحالات (جديد)
                 let refHtml = '';
                 if(u.refLogs && u.refLogs.length > 0) {
                     u.refLogs.slice(0,3).forEach(r => {
-                        refHtml += `<div class="log-row"><span style="color:#aaa">${r.user}</span><span style="color:#00E676">${r.plan}</span></div>`;
+                        refHtml += `<div class="log-row"><span style="color:#aaa">👥 ${r.user}</span><span style="color:#00E676">${r.plan}</span></div>`;
                     });
                 }
 
