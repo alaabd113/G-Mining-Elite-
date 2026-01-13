@@ -68,7 +68,6 @@
 
         <div v-else>
             <van-notice-bar v-if="user.status === 'review'" left-icon="info-o" background="#FFFBE8" color="#ED6A0C" wrapable scrollable text="⚠️ Your account is currently under review. Withdrawals are paused."></van-notice-bar>
-            
             <van-notice-bar v-if="fakeNotice" left-icon="volume-o" background="#111" color="#00E676" scrollable :text="fakeNotice" style="margin-bottom: 5px;"></van-notice-bar>
 
             <div class="top-bar">
@@ -181,7 +180,7 @@
                                 <div style="font-weight: bold; color: white;">
                                     {{ tx.type === 'deposit' ? t[lang].deposit : t[lang].withdraw }}
                                 </div>
-                                <div style="font-size: 0.8rem; color: #888;">{{ new Date(tx.date).toLocaleDateString() }}</div>
+                                <div style="font-size: 0.8rem; color: #888;">{{ new Date(tx.date).toLocaleString() }}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-weight: bold; margin-bottom: 5px;" :style="{color: tx.type==='deposit' ? '#00E676':'#FFC107'}">
@@ -258,8 +257,8 @@
         };
 
         const t = {
-            ar: { refHistory: "سجل الإحالات", history: "سجل العمليات", balance: "الرصيد الكلي", startTask: "بدء المهمة", clickEarn: "اضغط للربح", wait: "انتظر التحديث", joinGroup: "انضم للمجتمع", bonus: "مكافأة", go: "نفذ", daily: "ربح يومي", tasks: "مهام", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", network: "الشبكة", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", cancel: "إلغاء", setPinMsg: "يجب تعيين كلمة مرور للسحب", savePin: "حفظ الرمز", addr: "العنوان", useSaved: "استخدام المحفوظ", reqWithdraw: "طلب سحب", underReview: "قيد المراجعة", pin: "كلمة المرور", community: "المجتمع", refs: "أصدقاء", rank: "رتبة", copyLink: "نسخ الرابط", support: "الدعم الفني", writeMsg: "اكتب مشكلتك...", send: "إرسال", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", taskDone: "تمت المهمة بنجاح! 🎉" },
-            en: { refHistory: "Referral History", history: "Transaction History", balance: "Total Balance", startTask: "Start Task", clickEarn: "Click to Earn", wait: "Wait Reset", joinGroup: "Join Community", bonus: "Bonus", go: "Go", daily: "Daily", tasks: "Tasks", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", network: "Network", copy: "Copy", amount: "Amount", confirm: "Confirm", cancel: "Cancel", setPinMsg: "Set Withdrawal PIN", savePin: "Save PIN", addr: "Address", useSaved: "Use Saved", reqWithdraw: "Request Withdraw", underReview: "Under Review", pin: "PIN Code", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", support: "Support", writeMsg: "Describe issue...", send: "Send", home: "Home", wallet: "Wallet", team: "Team", taskDone: "Task Completed Successfully! 🎉" }
+            ar: { dailyUsed: "تم استنفاد السحب اليومي ⏳", refHistory: "سجل الإحالات", history: "سجل العمليات", balance: "الرصيد الكلي", startTask: "بدء المهمة", clickEarn: "اضغط للربح", wait: "انتظر التحديث", joinGroup: "انضم للمجتمع", bonus: "مكافأة", go: "نفذ", daily: "ربح يومي", tasks: "مهام", active: "مشترك", upgrade: "تفعيل", deposit: "إيداع", withdraw: "سحب", network: "الشبكة", copy: "نسخ", amount: "المبلغ", confirm: "تأكيد", cancel: "إلغاء", setPinMsg: "يجب تعيين كلمة مرور للسحب", savePin: "حفظ الرمز", addr: "العنوان", useSaved: "استخدام المحفوظ", reqWithdraw: "طلب سحب", underReview: "قيد المراجعة", pin: "كلمة المرور", community: "المجتمع", refs: "أصدقاء", rank: "رتبة", copyLink: "نسخ الرابط", support: "الدعم الفني", writeMsg: "اكتب مشكلتك...", send: "إرسال", home: "الرئيسية", wallet: "المحفظة", team: "الفريق", taskDone: "تمت المهمة بنجاح! 🎉" },
+            en: { dailyUsed: "Daily withdrawal already used ⏳", refHistory: "Referral History", history: "Transaction History", balance: "Total Balance", startTask: "Start Task", clickEarn: "Click to Earn", wait: "Wait Reset", joinGroup: "Join Community", bonus: "Bonus", go: "Go", daily: "Daily", tasks: "Tasks", active: "Active", upgrade: "Activate", deposit: "Deposit", withdraw: "Withdraw", network: "Network", copy: "Copy", amount: "Amount", confirm: "Confirm", cancel: "Cancel", setPinMsg: "Set Withdrawal PIN", savePin: "Save PIN", addr: "Address", useSaved: "Use Saved", reqWithdraw: "Request Withdraw", underReview: "Under Review", pin: "PIN Code", community: "Community", refs: "Friends", rank: "Rank", copyLink: "Copy Link", support: "Support", writeMsg: "Describe issue...", send: "Send", home: "Home", wallet: "Wallet", team: "Team", taskDone: "Task Completed Successfully! 🎉" }
         };
 
         createApp({
@@ -276,7 +275,6 @@
                 const isProcessing = ref(false);
                 const timeLeft = ref('');
                 
-                // ✅ منطق الإشعارات الوهمية
                 const fakeNotice = ref('');
                 const generateFakeNotice = () => {
                     const amt = Math.floor(Math.random() * (30 - 5 + 1)) + 5;
@@ -347,12 +345,18 @@
                 
                 const withdraw = async () => {
                     if (!wAddr.value) return vant.showToast('Enter Address');
-                    // ✅ منع السحب إذا كان أقل من 1$ في الواجهة
                     if (Number(wAmt.value) < 1) return vant.showNotify({ type: 'warning', message: 'Min withdraw 1$' });
                     
                     const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
                     if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
-                    else { vant.showNotify({ type: 'danger', message: data.error }); }
+                    else { 
+                        // ✅ ترجمة الخطأ "Daily limit used"
+                        if (data.error === "Daily limit used") {
+                            vant.showNotify({ type: 'warning', message: t[lang.value].dailyUsed });
+                        } else {
+                            vant.showNotify({ type: 'danger', message: data.error });
+                        }
+                    }
                 };
 
                 const sendSupport = async () => {
@@ -383,7 +387,6 @@
 
                 onMounted(() => {
                     refresh();
-                    // تشغيل الإشعارات الوهمية
                     generateFakeNotice();
                     setInterval(generateFakeNotice, 8000);
                 });
