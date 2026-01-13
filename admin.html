@@ -61,7 +61,7 @@
     <div class="header">
         <div>
             <h1>🛡️ TokenDrip Ops</h1>
-            <span style="font-size:0.75rem; color:#666;">v3.0 Stable</span>
+            <span style="font-size:0.75rem; color:#666;">v3.1 Golden</span>
         </div>
         <div class="refresh-btn" onclick="refreshAll()" title="Refresh All"><i class="ri-refresh-line"></i></div>
     </div>
@@ -88,14 +88,15 @@
             <button class="btn-search" onclick="fetchUserInfo()">جلب البيانات</button>
             
             <div id="searchResult" style="display:none; margin-top:15px; border-top:1px dashed #444; padding-top:15px;">
-                </div>
+            </div>
         </div>
 
         <div class="card">
             <h3>⚡ معالجة (Process TX)</h3>
             <div style="background:rgba(255,193,7,0.05); padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.8rem; color:#aaa; border:1px solid #333;">
                 ℹ️ الموافقة تعيد الحساب إلى <b>Active</b> تلقائياً.<br>
-                ℹ️ الرفض يعيد المبلغ للرصيد.
+                ℹ️ الرفض يعيد المبلغ للرصيد.<br>
+                ℹ️ يتم تسجيل TXID عالمياً لمنع التكرار.
             </div>
             
             <label>User ID</label>
@@ -138,16 +139,16 @@
                     <option value="3">VIP 3</option>
                     <option value="4">VIP 4</option>
                     <option value="5">VIP 5</option>
-                </select>
+                    <option value="6">VIP 6</option> </select>
             </div>
             <button class="btn-blue" style="margin-top:15px;" onclick="manualUpdate()">💾 حفظ التعديلات</button>
         </div>
     </div>
 
     <script>
+        // ⚠️ استبدل هذا برابط السيرفر الخاص بك
         const SERVER = "https://steep-resonance-6443.alaabdalaziz01.workers.dev";
         const ALLOWED_ADMIN_ID = 921301895;
-        // ✅ 1. تغيير كلمة المرور للأمان
         const ADMIN_PASS = "Admin@Token2024"; 
 
         const tg = window.Telegram.WebApp;
@@ -168,7 +169,6 @@
         function setBusy(isBusy) { document.getElementById('loader-overlay').style.display = isBusy ? 'flex' : 'none'; }
         function toast(msg, type = 'success') { const t = document.getElementById("toast"); t.innerText = msg; t.style.background = type === 'error' ? '#FF5252' : '#00E676'; t.className = "show"; setTimeout(() => { t.className = ""; }, 3000); }
         
-        // ✅ 2. زر التحديث الشامل
         function refreshAll() {
             const id = document.getElementById('searchId').value;
             if(id) fetchUserInfo();
@@ -181,6 +181,7 @@
         async function api(act, pl) {
             setBusy(true);
             try {
+                // ملاحظة: لوحة التحكم ترسل initData أيضاً للتحقق
                 const r = await fetch(SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) });
                 setBusy(false);
                 return await r.json();
@@ -198,20 +199,27 @@
                 const u = d.user;
                 let badgeClass = 'status-active';
                 let badgeText = 'ACTIVE ✅';
-                // تحديد حالة الأزرار بناءً على حالة المستخدم
                 let banDisabled = false;
                 let unbanDisabled = true;
 
                 if(u.isBanned || u.status === 'banned') { 
                     badgeClass = 'status-banned'; badgeText = 'BANNED 🚫'; 
-                    banDisabled = true; unbanDisabled = false; // لا يمكن حظره لأنه محظور أصلاً
+                    banDisabled = true; unbanDisabled = false;
                 }
                 else if(u.status === 'review') { badgeClass = 'status-review'; badgeText = 'UNDER REVIEW ⚠️'; }
 
-                let logs = '';
+                let logsHtml = '';
                 if(u.logs && u.logs.length > 0) {
                     u.logs.slice(0,5).forEach(l => {
-                        logs += `<div class="log-row"><span>${l.type}</span><span style="color:${l.amount>0?'#00E676':'#FF5252'}">${l.amount}$</span></div>`;
+                        logsHtml += `<div class="log-row"><span>${l.type}</span><span style="color:${l.amount>0?'#00E676':'#FF5252'}">${l.amount}$</span></div>`;
+                    });
+                } else { logsHtml = '<div style="color:#666; text-align:center;">No recent activity</div>'; }
+
+                // عرض سجل الإحالات
+                let refHtml = '';
+                if(u.refLogs && u.refLogs.length > 0) {
+                    u.refLogs.slice(0,3).forEach(r => {
+                        refHtml += `<div class="log-row"><span style="color:#aaa">${r.user}</span><span style="color:#00E676">${r.plan}</span></div>`;
                     });
                 }
 
@@ -224,13 +232,13 @@
                         👤 <b>User:</b> ${u.username || 'N/A'} (<code>${u.id}</code>)<br>
                         💰 <b>Balance:</b> <span style="color:var(--primary); font-size:1.1rem; font-weight:bold;">${u.balance}$</span><br>
                         🏆 <b>VIP:</b> Level ${u.vip}<br>
-                        👥 <b>Refs:</b> ${u.referrals}<br>
+                        👥 <b>Refs:</b> ${u.referrals} ${refHtml ? '<br><small style="color:#aaa">Recent Refs:</small>' + refHtml : ''}<br>
                         🎫 <b>Ticket:</b> ${u.supportTicket ? '<span style="color:var(--warning)">OPEN</span>' : 'None'}<br>
                         🌐 <b>IP:</b> ${u.lastIP || 'Unknown'}
                     </div>
                     <div style="margin-top:15px; border-top:1px solid #333; pt-2">
-                        <small style="color:#aaa">Recent Activity:</small>
-                        ${logs}
+                        <small style="color:#aaa">Recent Logs:</small>
+                        ${logsHtml}
                     </div>
                     <div style="display:flex; gap:10px; margin-top:15px;">
                         <button class="btn-ban" onclick="toggleBan(true)" ${banDisabled ? 'disabled' : ''}>🚫 Ban</button>
@@ -255,7 +263,7 @@
             if(d.ok) { 
                 toast(st === 'approved' ? "Approved ✅" : "Rejected ❌"); 
                 document.getElementById('txRef').value = '';
-                if(document.getElementById('searchId').value == id) fetchUserInfo(); // تحديث تلقائي
+                if(document.getElementById('searchId').value == id) fetchUserInfo(); 
             } else { toast(d.error, "error"); }
         }
 
