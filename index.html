@@ -285,7 +285,7 @@
                     fakeNotice.value = msgs[Math.floor(Math.random() * msgs.length)];
                 };
 
-                // ✅ 🛠️ Strict Telegram Check & Setup
+                // ✅ 🛠️ Strict Telegram Check with Vant Notify
                 let timerInterval = null;
                 let tg = null;
 
@@ -293,12 +293,28 @@
                     tg = window.Telegram.WebApp;
                     tg.expand();
                 } else {
-                    // ⛔ إيقاف التطبيق إذا لم يكن داخل تلغرام
-                    alert("❌ Please open this app from Telegram only");
+                    // Use setTimeout to ensure Vant is ready
+                    setTimeout(() => {
+                        vant.showNotify({ 
+                            type: 'danger', 
+                            message: '❌ Please open this app from Telegram only',
+                            duration: 0 // لا يختفي أبداً
+                        });
+                    }, 500);
                     throw new Error("Telegram WebApp required");
                 }
 
-                const api = async (act, pl = {}) => { try { const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); return await r.json(); } catch (e) { return { ok: false, error: "Connection Error" }; } };
+                const api = async (act, pl = {}) => { 
+                    // ✅ Security Guard: Don't call server if session invalid
+                    if (!tg.initDataUnsafe?.user?.id) {
+                        return { ok: false, error: "Invalid session" };
+                    }
+
+                    try { 
+                        const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); 
+                        return await r.json(); 
+                    } catch (e) { return { ok: false, error: "Connection Error" }; } 
+                };
                 
                 const startTimer = () => {
                     if(timerInterval) clearInterval(timerInterval);
@@ -311,14 +327,13 @@
                     }; updateTimer(); timerInterval = setInterval(updateTimer, 1000);
                 };
 
-                // ✅ 🛠️ Refresh Logic with Error Handling
                 const refresh = async () => { 
                     const data = await api("login", { ref: new URLSearchParams(window.location.search).get('start') }); 
                     
                     if (!data.ok) {
                         loading.value = false;
                         vant.showNotify({ type: 'danger', message: data.error || 'Connection Failed' });
-                        return; // ⛔ توقف هنا ولا تكمل
+                        return; // Stop here
                     }
 
                     user.value = data.user; 
@@ -328,7 +343,7 @@
 
                 const isMiningDisabled = computed(() => {
                     if (user.value.vip === 0) return true;
-                    if (isProcessing.value) return true;
+                    if (isProcessing.value) return true; // Anti-Spam
                     if (timeLeft.value !== '') return true;
                     return false;
                 });
@@ -404,7 +419,8 @@
                 onMounted(() => {
                     refresh();
                     generateFakeNotice();
-                    setInterval(generateFakeNotice, 8000);
+                    // ✅ تم رفع الوقت إلى 12 ثانية لتكون أكثر واقعية
+                    setInterval(generateFakeNotice, 12000);
                 });
 
                 return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport, fakeNotice };
