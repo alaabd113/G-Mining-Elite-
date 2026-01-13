@@ -302,7 +302,8 @@
                 };
 
                 const refresh = async () => { 
-                    const data = await api("login", { ref: new URLSearchParams(window.location.search).get('startapp') }); 
+                    // ✅ تم التعديل هنا: استخدام get('start') بدلاً من get('startapp')
+                    const data = await api("login", { ref: new URLSearchParams(window.location.search).get('start') }); 
                     if (data.ok) { 
                         user.value = data.user; loading.value = false;
                         if (user.value.vip > 0 && user.value.mineCount >= vipPlans[user.value.vip].dailyLimit) startTimer(); else timeLeft.value = '';
@@ -350,7 +351,6 @@
                     const data = await api("withdraw", { amount: wAmt.value, wallet: wAddr.value, pin: wPin.value, network: depositNetwork.value });
                     if (data.ok) { user.value = data.user; vant.showSuccessToast('Request Sent'); wAmt.value=''; wPin.value=''; } 
                     else { 
-                        // ✅ ترجمة الخطأ "Daily limit used"
                         if (data.error === "Daily limit used") {
                             vant.showNotify({ type: 'warning', message: t[lang.value].dailyUsed });
                         } else {
@@ -381,8 +381,11 @@
                     }).catch(() => {});
                 };
 
-                const copyAddress = () => { navigator.clipboard.writeText(WALLETS[depositNetwork.value]); vant.showToast(t[lang.value].copy); };
-                const copyLink = () => { navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?startapp=${user.value.id}`); vant.showToast(t[lang.value].copy); };
+                // ✅ تعديل رابط النسخ ليستخدم ?start= بدلاً من ?startapp=
+                const copyLink = () => { 
+                    navigator.clipboard.writeText(`https://t.me/${CONFIG.BOT_USERNAME}?start=${user.value.id}`); 
+                    vant.showToast(t[lang.value].copy); 
+                };
                 const formatMoney = (v) => Number(v).toFixed(2);
 
                 onMounted(() => {
