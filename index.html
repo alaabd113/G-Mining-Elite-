@@ -31,14 +31,16 @@
             border-color: #444; background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%);
             filter: grayscale(100%); opacity: 0.7; cursor: not-allowed; pointer-events: none; 
         }
-        .spinner-border {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%; border: 4px solid transparent;
-            border-top-color: var(--primary); 
-            animation: spin 1s linear infinite; display: none;
-        }
-        .harvest-circle.loading .spinner-border { display: block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .mining-scene { display: none; flex-direction: column; align-items: center; }
+        .harvest-circle.loading .mining-scene { display: flex; }
+        .harvest-circle.loading .static-content { display: none; }
+        
+        .bot-icon { font-size: 4rem; animation: bounce 1s infinite alternate; }
+        .pickaxe { font-size: 2.5rem; position: absolute; top: 30px; right: 30px; animation: dig 0.8s infinite; }
+        
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        @keyframes dig { 0% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } 100% { transform: rotate(0deg); } }
 
         .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .btn-main { background: linear-gradient(90deg, var(--primary), #00C853); border: none; color: black; font-weight: bold; width: 100%; border-radius: 8px; height: 44px; margin-top: 10px; }
@@ -83,16 +85,27 @@
                 </div>
 
                 <div class="harvest-circle" :class="{ disabled: isMiningDisabled, loading: isProcessing }" @click="handleCollect">
-                    <div class="spinner-border"></div>
-                    <div v-if="timeLeft === ''">
-                        <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
-                        <h3 style="margin: 5px 0; color: white;">{{ t[lang].startTask }}</h3>
-                        <span style="font-size: 0.85rem; color: #aaa;">{{ t[lang].clickEarn }}</span>
+                    <div class="mining-scene">
+                        <div style="position:relative;">
+                            <div class="bot-icon">🤖</div>
+                            <div class="pickaxe">⛏️</div>
+                        </div>
+                        <span style="font-size: 0.85rem; color: #00E676; margin-top: 10px; font-weight:bold;">
+                            ⛏️ Mining in progress... {{ countDown }}s
+                        </span>
                     </div>
-                    <div v-else>
-                        <i class="ri-time-line" style="font-size: 3rem; color: #666;"></i>
-                        <div style="font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #888;">{{ timeLeft }}</div>
-                        <span style="font-size: 0.75rem; color: #666;">{{ t[lang].wait }}</span>
+
+                    <div class="static-content">
+                        <div v-if="timeLeft === ''">
+                            <i class="ri-flashlight-fill" style="font-size: 3rem; color: var(--primary);"></i>
+                            <h3 style="margin: 5px 0; color: white;">{{ t[lang].startTask }}</h3>
+                            <span style="font-size: 0.85rem; color: #aaa;">{{ t[lang].clickEarn }}</span>
+                        </div>
+                        <div v-else>
+                            <i class="ri-time-line" style="font-size: 3rem; color: #666;"></i>
+                            <div style="font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #888;">{{ timeLeft }}</div>
+                            <span style="font-size: 0.75rem; color: #666;">{{ t[lang].wait }}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -114,7 +127,7 @@
                             <div style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">${{ plan.price }}</div>
                         </div>
                         <div style="margin: 15px 0; font-size: 0.9rem; color: #ccc;">
-                            <div>{{ t[lang].daily }}: <span style="color:white; font-weight:bold;">${{ (plan.mineRate * plan.dailyLimit).toFixed(2) }}</span></div>
+                            <div>{{ t[lang].daily }}: <span style="color:white; font-weight:bold;">${{ plan.mineRate }}</span></div>
                             <div style="margin-top:5px; color:#FFC107;">Ref Bonus: {{ (plan.refBonus * 100).toFixed(0) }}%</div>
                         </div>
                         <button v-if="user.vip >= Number(level)" disabled style="width:100%; padding:10px; background:#333; color:#888; border:none; border-radius:8px;">{{ t[lang].active }}</button>
@@ -201,6 +214,12 @@
                     <div style="background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-around;">
                         <div><h3>{{ user.referrals }}</h3><small>{{ t[lang].refs }}</small></div><div><h3>VIP {{ user.vip }}</h3><small>{{ t[lang].rank }}</small></div>
                     </div>
+                    
+                    <div style="background: #252525; padding: 10px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                         <div style="font-size:0.9rem; color:#aaa;">💰 Total Ref Earnings</div>
+                         <div style="font-size:1.5rem; font-weight:bold; color:var(--primary);">${{ formatMoney(user.refEarnings || 0) }}</div>
+                    </div>
+
                     <div style="margin-bottom: 20px; font-size: 0.9rem; color: #aaa;">
                         {{ lang === 'ar' ? 'احصل على مكافأة فورية عند ترقية أصدقائك!' : 'Get instant bonus when friends upgrade!' }}
                     </div>
@@ -249,11 +268,11 @@
         const vipPlans = { 
             0:{name:"Free",price:0,dailyLimit:0,mineRate:0,maxDailyWithdraw:0, refBonus:0}, 
             1:{name:"VIP 1",price:5,dailyLimit:1,mineRate:1.25,maxDailyWithdraw:5, refBonus:0.10}, 
-            2:{name:"VIP 2",price:15,dailyLimit:2,mineRate:1.725,maxDailyWithdraw:15, refBonus:0.08}, 
-            3:{name:"VIP 3",price:40,dailyLimit:3,mineRate:2.80,maxDailyWithdraw:40, refBonus:0.07}, 
-            4:{name:"VIP 4",price:100,dailyLimit:4,mineRate:4.75,maxDailyWithdraw:100, refBonus:0.06}, 
-            5:{name:"VIP 5",price:300,dailyLimit:5,mineRate:10.20,maxDailyWithdraw:300, refBonus:0.05}, 
-            6:{name:"VIP 6",price:800,dailyLimit:6,mineRate:20.00,maxDailyWithdraw:800, refBonus:0.04} 
+            2:{name:"VIP 2",price:15,dailyLimit:1,mineRate:3.45,maxDailyWithdraw:15, refBonus:0.08}, 
+            3:{name:"VIP 3",price:40,dailyLimit:1,mineRate:8.40,maxDailyWithdraw:40, refBonus:0.07}, 
+            4:{name:"VIP 4",price:100,dailyLimit:1,mineRate:19.00,maxDailyWithdraw:100, refBonus:0.06}, 
+            5:{name:"VIP 5",price:300,dailyLimit:1,mineRate:51.00,maxDailyWithdraw:300, refBonus:0.05}, 
+            6:{name:"VIP 6",price:800,dailyLimit:1,mineRate:120.00,maxDailyWithdraw:800, refBonus:0.04} 
         };
 
         const t = {
@@ -266,7 +285,7 @@
                 const lang = ref('ar');
                 const toggleLang = () => lang.value = lang.value === 'ar' ? 'en' : 'ar';
                 
-                const user = ref({ balance: 0, vip: 0, referrals: 0, mineCount: 0, savedWallet: null, groupJoined: false, transactions: [], refLogs: [], status: 'active' });
+                const user = ref({ balance: 0, vip: 0, referrals: 0, refEarnings: 0, mineCount: 0, savedWallet: null, groupJoined: false, transactions: [], refLogs: [], status: 'active' });
                 const loading = ref(true);
                 const activeTab = ref('home'); const walletTab = ref(0);
                 const depAmount = ref(''); const depTxid = ref(''); const wAmt = ref(''); const wAddr = ref(''); const wPin = ref(''); const newPin = ref(''); const depositNetwork = ref('BEP20');
@@ -274,6 +293,7 @@
                 const showSupport = ref(false); const supportMsg = ref('');
                 const isProcessing = ref(false);
                 const timeLeft = ref('');
+                const countDown = ref(60); 
                 
                 const fakeNotice = ref('');
                 const generateFakeNotice = () => {
@@ -285,7 +305,6 @@
                     fakeNotice.value = msgs[Math.floor(Math.random() * msgs.length)];
                 };
 
-                // ✅ 🛠️ Strict Telegram Check with Vant Notify
                 let timerInterval = null;
                 let tg = null;
 
@@ -293,23 +312,22 @@
                     tg = window.Telegram.WebApp;
                     tg.expand();
                 } else {
-                    // Use setTimeout to ensure Vant is ready
                     setTimeout(() => {
                         vant.showNotify({ 
                             type: 'danger', 
                             message: '❌ Please open this app from Telegram only',
-                            duration: 0 // لا يختفي أبداً
+                            duration: 0 
                         });
                     }, 500);
                     throw new Error("Telegram WebApp required");
                 }
 
-                const api = async (act, pl = {}) => { 
-                    // ✅ Security Guard: Don't call server if session invalid
-                    if (!tg.initDataUnsafe?.user?.id) {
-                        return { ok: false, error: "Invalid session" };
-                    }
+                if (!tg.initDataUnsafe?.user?.id) {
+                    setTimeout(() => vant.showNotify({ type: 'danger', message: 'Invalid Session' }), 500);
+                }
 
+                const api = async (act, pl = {}) => { 
+                    if (!tg.initDataUnsafe?.user?.id) return { ok: false, error: "Invalid session" };
                     try { 
                         const r = await fetch(CONFIG.SERVER, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: tg.initData, action: act, payload: pl }) }); 
                         return await r.json(); 
@@ -333,7 +351,7 @@
                     if (!data.ok) {
                         loading.value = false;
                         vant.showNotify({ type: 'danger', message: data.error || 'Connection Failed' });
-                        return; // Stop here
+                        return;
                     }
 
                     user.value = data.user; 
@@ -343,7 +361,7 @@
 
                 const isMiningDisabled = computed(() => {
                     if (user.value.vip === 0) return true;
-                    if (isProcessing.value) return true; // Anti-Spam
+                    if (isProcessing.value) return true; 
                     if (timeLeft.value !== '') return true;
                     return false;
                 });
@@ -351,7 +369,17 @@
                 const handleCollect = async () => { 
                     if(isMiningDisabled.value) return;
                     isProcessing.value = true;
+                    countDown.value = 60; 
+
+                    const cInterval = setInterval(() => {
+                        countDown.value--;
+                        if(countDown.value <= 0) clearInterval(cInterval);
+                    }, 1000);
+
                     setTimeout(async () => {
+                        clearInterval(cInterval);
+                        countDown.value = 0; // ✅ UX Fix: Reset Counter Immediately
+
                         const data = await api("mine"); 
                         isProcessing.value = false;
                         if (data.ok) { 
@@ -361,7 +389,7 @@
                         } else { 
                             vant.showNotify({ type: 'warning', message: data.error }); 
                         }
-                    }, 1000);
+                    }, 60000); 
                 };
 
                 const joinGroupTask = async () => {
@@ -419,11 +447,10 @@
                 onMounted(() => {
                     refresh();
                     generateFakeNotice();
-                    // ✅ تم رفع الوقت إلى 12 ثانية لتكون أكثر واقعية
                     setInterval(generateFakeNotice, 12000);
                 });
 
-                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport, fakeNotice };
+                return { loading, activeTab, walletTab, user, vipPlans, depAmount, depTxid, wAmt, wAddr, wPin, newPin, depositNetwork, isProcessing, timeLeft, isMiningDisabled, handleCollect, setupPin, withdraw, submitDeposit, buyVip, copyAddress, copyLink, formatMoney, joinGroupTask, CONFIG, WALLETS, lang, t, toggleLang, showSupport, supportMsg, sendSupport, fakeNotice, countDown };
             }
         }).use(vant).mount("#app");
     </script>
